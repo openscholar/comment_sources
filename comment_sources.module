@@ -1,0 +1,143 @@
+<?php
+
+/**
+ * Implements hook_menu().
+ */
+function comment_sources_menu() {
+  $items = array();
+  $items['admin/structure/comment_sources'] = array(
+    'title' => 'Comment Sources',
+    'description' => 'Select commenting system(s) to use',
+    'access arguments' => array('Administer comments and comment settings'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('comment_sources_admin_settings_form'),
+    'file' => 'comment_sources.admin.inc',
+  );
+  return $items;
+}
+
+/**
+ * Get Facebook Social comment presets
+ */
+function _comment_sources_preset_fb_social() {
+  $presets = array();
+  if (function_exists('fb_social_get_presets_by_type')) {
+    $presets = fb_social_get_presets_by_type('comments');
+  }
+  return $presets;
+}
+
+
+/**
+ * Load the existing comment source selections and return as an associative array of comment sources keyed by node type
+ * Where there are multiple comment sources provided by the same module, the source names will be of the form
+ * 'module_name:source_name'
+ */
+function comment_sources_load($sources) {
+  $default_values = array();
+  foreach (array_keys($sources) as $key) {
+    preg_match('/:(.*$)/',$key,$matches);
+    $function_name = "_comment_sources_load_" . preg_replace('/:.*$/','',$key);
+    if (function_exists($function_name)) {
+      $params = array();
+      if (count($matches) > 1)
+        $params[] = $matches[1];
+      $node_types = call_user_func_array($function_name,$params);
+      foreach ($node_types as $node_type) {
+        $default_values[$node_type] = $key;
+      }
+    }
+  }
+  return $default_values;
+}
+
+/**
+ * Retrieve the Disqus node types comment settings as an array of node types using Disqus comments
+ */
+function _comment_sources_load_disqus() {
+  return variable_get('disqus_nodetypes', array());
+}
+
+/**
+ * Retrieve the Facebook preset node types comment settings as an array of node types using Facebook comments
+ */
+function _comment_sources_load_fb_social($variant = '') {
+  $result = array();
+  if ($variant && function_exists('fb_social_preset_load')) {
+    $preset = fb_social_preset_load($variant);
+    $result = $preset->settings['node_types']['types'];
+  }
+  return $result;
+}
+
+/**
+ * Retrieve the Drupal node types comment settings as an array of node types using Drupal core comments
+ */
+function _comment_sources_load_comment() {
+  $node_types = node_type_get_types();
+  $result = array();
+  foreach ($node_types as $node_type) {
+    $setting = variable_get("comment_" . $node_type->type, COMMENT_NODE_CLOSED);
+    if ($setting == COMMENT_NODE_OPEN) {
+      $result[$node_type->type] = $node_type->type;
+    }
+  }
+  return $result;
+}
+
+/**
+ * Save the comment source selections by node type, given a list of available comment sources and
+ * an associative array of the new comment sources, keyed by node type
+ */
+function comment_sources_save($available_sources, $selected_sources) {
+
+  $selections = array();
+  foreach ($selected_sources as $key => $value) {
+    $selections[$value][$key] = $key;
+  }
+
+  foreach ($available_sources as $key => $value) {
+    preg_match('/:(.*$)/',$key,$matches);
+    $function_name = "_comment_sources_save_" . preg_replace('/:.*$/','',$key);
+    if (function_exists($function_name)) {
+      $params = array(isset($selections[$key]) ? $selections[$key] : array());
+      if (count($matches) > 1) { // If we need to add a preset
+        $params[] = $matches[1];
+      }
+      call_user_func_array($function_name,$params);
+    }
+  }
+}
+
+/**
+ * Save the Disqus node types comment settings
+ */
+function _comment_sources_save_disqus($comment_node_types) {
+  variable_set('disqus_nodetypes', $comment_node_types);
+}
+
+/**
+ * Save the Facebook node type comments settings
+ */
+function _comment_sources_save_fb_social($comment_node_types, $preset_name = '') {
+  if ($preset_name && function_exists('fb_social_preset_load')) {
+    $preset = fb_social_preset_load($preset_name);
+    $preset->settings['node_types']['types'] = $comment_node_types;
+    ctools_export_crud_save($preset->table, $preset);
+  }
+}
+
+/**
+ * Save the Drupal comments node types comment settings
+ * Note: We do not have an option to set the default comment to be 'hidden'
+ */
+function _comment_sources_save_comment($comment_node_types) {
+  $node_types = node_type_get_types();
+  foreach ($node_types as $node_type) {
+    variable_set(
+      "comment_" . $node_type->type,
+      isset($comment_node_types[$node_type->type]) ? COMMENT_NODE_OPEN : COMMENT_NODE_CLOSED
+    );
+  }
+}
+

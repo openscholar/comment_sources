@@ -1,0 +1,170 @@
+<?php
+
+/**
+ * @file
+ * Test cases for comment_sources
+ */
+
+class CommentSourcesAPITestCase extends DrupalWebTestCase {
+
+  public function setUp($modules) {
+    if (is_array($modules)) {
+      $modules[] = 'comment_sources';
+    }
+    else {
+      $modules = 'comment_sources';
+    }
+    module_load_include("php","comment_sources","comment_sources.api");
+    parent::setUp($modules);
+  }
+}
+
+
+class CommentSourcesNoModulesTestCase extends CommentSourcesAPITestCase {
+
+  public static function getInfo() {
+    return array(
+      'name' => 'No Comment Modules Tests',
+      'description' => 'Test case where only core comments enabled',
+      'group' => 'Comment Sources',
+    );
+  }
+
+  public function setUp() {
+    parent::setUp(array());
+  }
+
+  public function testCommentSourcesGetSources() {
+    $sources = comment_sources_enabled_sources();
+    $this->assertEqual(1,count($sources),$message = "With only core commenting modules enabled, only one sources should be available");
+    $this->assert(array_key_exists('comment',$sources));
+  }
+}
+
+class CommentSourcesDisqusEnabledTestCase extends CommentSourcesAPITestCase {
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Disqus Enabled Tests',
+      'description' => 'Test case where Disqus comments enabled',
+      'group' => 'Comment Sources',
+    );
+  }
+
+  public function setUp() {
+    parent::setUp(array('disqus'));
+  }
+
+  public function testCommentSourcesGetSources() {
+    $sources = comment_sources_enabled_sources();
+    $this->assertEqual(2,count($sources),$message = "With only Disqus commenting module enabled, two sources should be available");
+    $this->assert(array_key_exists('comment',$sources));
+    $this->assert(array_key_exists('disqus',$sources));
+  }
+}
+
+// TODO: Need to figure out how to test for successful retrieval of fb_social presets. Will require creating
+// TODO: a preset and saving it for the test.
+
+//class CommentSourcesFacebookEnabledTestCase extends CommentSourcesAPITestCase {
+//
+//  public static function getInfo() {
+//    return array(
+//      'name' => 'Facebook Enabled Tests',
+//      'description' => 'Test case where Faceboko and Disqus comments enabled',
+//      'group' => 'Comment Sources',
+//    );
+//  }
+//
+//  public function setUp() {
+//    parent::setUp(array('disqus','fb_social'));
+//
+//    // Setup a preset
+//    $fb_social_preset = new stdClass();
+//    $fb_social_preset->disabled = FALSE; /* Edit this to true to make a default fb_social_preset disabled initially */
+//    $fb_social_preset->api_version = 1;
+//    $fb_social_preset->name = 'Comments';
+//    $fb_social_preset->description = 'Comments';
+//    $fb_social_preset->plugin_type = 'comments';
+//    $fb_social_preset->settings = array(
+//      'node_types' => array(
+//        'types' => array(),
+//      ),
+//      'plugin_location' => array(
+//        'node_view_modes' => array(
+//          'full' => 'full',
+//          'teaser' => 'teaser',
+//          'rss' => 0,
+//          'search_index' => 0,
+//          'search_result' => 0,
+//        ),
+//      ),
+//      'plugin_comments_count' => array(
+//        'count' => 1,
+//        'cache' => '30',
+//      ),
+//      'plugin_comments_seo' => array(
+//        'seo' => 0,
+//        'nr_comments' => '100',
+//        'cache_length' => '720',
+//      ),
+//      'block' => 0,
+//    );
+//    $fb_social_preset->fb_attrs = array(
+//      'numposts' => '10',
+//      'width' => '550',
+//      'colorscheme' => 'light',
+//      'migrated' => 0,
+//    );
+//    $fb_social_preset->export_type = false;
+//    ctools_export_crud_save('fb_social_preset',$fb_social_preset);
+//  }
+//
+//  public function testCommentSourcesGetSources() {
+//    $sources = comment_sources_enabled_sources();
+//    $this->assertEqual(2,count($sources),$message = "With only Disqus commenting module enabled, two sources should be available");
+//    $this->assert(array_key_exists('comment',$sources));
+//    $this->assert(array_key_exists('disqus',$sources));
+//  }
+//}
+
+class CommentSourcesSetSourceTestCase extends CommentSourcesAPITestCase {
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Set Comment Source Test',
+      'description' => 'Test setting comment sources',
+      'group' => 'Comment Sources',
+    );
+  }
+
+  public function setUp() {
+    parent::setUp(array('disqus'));
+  }
+
+  public function testCommentSourceInvalidContentType() {
+    $result = comment_sources_set_source('bogus','disqus');
+    $this->assertFalse($result,$message = "Should fail due to bad content type");
+  }
+
+  public function testCommentSourceInvalidSource() {
+    $result = comment_sources_set_source('article','bogus');
+    $this->assertFalse($result,$message = "Should fail due to bad comment source");
+  }
+
+  public function testCommentSourceSaveDisqusComment() {
+    $result = comment_sources_set_source('article','disqus');
+    $this->assertTrue($result);
+    $sources = comment_sources_load(comment_sources_enabled_sources());
+    $this->assertEqual('disqus',$sources['article']);
+  }
+
+  public function testCommentSourceSaveDrupalComment() {
+    $result = comment_sources_set_source('article','comment');
+    $this->assertTrue($result);
+    $sources = comment_sources_load(comment_sources_enabled_sources());
+    $this->assertEqual('comment',$sources['article']);
+  }
+
+}
+
