@@ -1,6 +1,6 @@
 <?php
 
-module_load_include('api.php','comment_sources');
+module_load_include('api.inc','comment_sources');
 
 /**
  * Implements hook_menu().

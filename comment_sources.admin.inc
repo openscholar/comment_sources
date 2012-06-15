@@ -5,7 +5,7 @@
  * Administration form for the comment_sources module
  */
 
-module_load_include('api.php','comment_sources');
+module_load_include('api.inc','comment_sources');
 
 /**
  * Menu callback; Displays the administration settings for comment sources.
