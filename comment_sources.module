@@ -1,5 +1,7 @@
 <?php
 
+module_load_include('api.php','comment_sources');
+
 /**
  * Implements hook_menu().
  */
@@ -15,6 +17,89 @@ function comment_sources_menu() {
   );
   return $items;
 }
+
+/**
+ * Implementation of hook_form_alter().
+ */
+function comment_sources_form_alter(&$form, $form_state, $form_id) {
+
+  // Node type edit page
+  if ($form_id == 'node_type_form' && isset($form['#node_type'])) {
+    if (isset($form['comment'])) {
+      $default_source = comment_sources_get_source($form['#node_type']->type);
+
+      foreach ($form['comment'] as &$form_element) {
+        debug($form['comment']);
+        if (is_array($form_element)) {
+          $form_element['#states'] = array(
+            'hidden' => array(
+              'input[name="comment_source"]' => array('value' => 'comment')
+            )
+          );
+        }
+      }
+
+      $form['comment']['comment_source'] = array(
+        '#type' => 'select',
+        '#title' => t('Comment source'),
+        '#default_value' => !empty($default_source) ? $default_source : 'comment',
+        '#options' => comment_sources_node_options(comment_sources_enabled_sources()),
+        '#weight' => -20,
+      );
+
+    }
+
+  }
+
+
+// Allow toggling the comments on or off per node from the node edit form.
+//  if (!empty($form['#node_edit_form'])) {
+//    $node = $form['#node'];
+//    // Only display the toggle Disqus comments setting if comments are available
+//    // for the given node type.
+//    $types = variable_get('disqus_nodetypes', array());
+//    if (isset($types[$node->type]) && !empty($types[$node->type])) {
+//      // Add the Disqus settings into the Comment settings fieldset if it exists.
+//      if (!isset($form['comment_settings'])) {
+//        $form['comment_settings'] = array(
+//          '#type' => 'fieldset',
+//          '#access' => user_access('toggle disqus comments'),
+//          '#title' => t('Comment settings'),
+//          '#collapsible' => TRUE,
+//          '#collapsed' => TRUE,
+//          '#group' => 'additional_settings',
+//          '#weight' => 30,
+//        );
+//      }
+//      else {
+//        if (isset($form['comment_settings']['comment'])) {
+//          $form['comment_settings']['comment']['#access'] = $form['comment_settings']['#access'];
+//          $form['comment_settings']['#access'] = true;
+//        }
+//      }
+//      $form['comment_settings']['disqus_status'] = array(
+//        '#type' => 'checkbox',
+//        '#title' => t('Disqus comments'),
+//        '#description' => t('Users can post comments using <a href="@disqus">Disqus</a>.', array('@disqus' => 'http://disqus.com')),
+//        '#default_value' => isset($node->disqus['status']) ? $node->disqus['status'] : TRUE,
+//        '#access' => user_access('toggle disqus comments'),
+//      );
+//    }
+//  }
+}
+
+/**
+ * Get the list of comment source options that can be used in a form element
+ */
+function comment_sources_node_options($sources)
+{
+  foreach ($sources as $key => $value) {
+    $node_options[$key] = $value['description'];
+  }
+  return $node_options;
+}
+
+
 
 /**
  * Get Facebook Social comment presets
@@ -42,11 +127,18 @@ function comment_sources_load($sources) {
       $params = array();
       if (count($matches) > 1)
         $params[] = $matches[1];
-      $node_types = call_user_func_array($function_name,$params);
-      foreach ($node_types as $node_type) {
-        $default_values[$node_type] = $key;
+      $node_type_names = call_user_func_array($function_name,$params);
+      foreach ($node_type_names as $node_type_name) {
+        $default_values[$node_type_name] = $key;
       }
     }
+  }
+  /* Make sure that node types with no comment sources get a value in the array */
+  foreach (node_type_get_types() as $node_type) {
+    if (!array_key_exists($node_type->type,$default_values)) {
+      $default_values[$node_type->type] = '';
+    }
+
   }
   return $default_values;
 }

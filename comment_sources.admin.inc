@@ -16,33 +16,20 @@ function comment_sources_admin_settings_form() {
   $node_types = node_type_get_types();
 
   $sources = comment_sources_enabled_sources();
-  $options = comment_sources_node_options($sources);
+  $options = array_merge(comment_sources_node_options($sources),array('' => t('No comments')));
   $default_values = comment_sources_load($sources);
   foreach ($node_types as $key => $value) {
     $form["comment_sources_$key"] = array(
       '#type' => 'radios',
       '#title' => $value->name,
       '#options' => $options,
-      '#default_value' => isset($default_values[$key]) ? $default_values[$key] : 'none',
+      '#default_value' => isset($default_values[$key]) ? $default_values[$key] : '',
       );
   }
 
   $form = system_settings_form($form);
   $form['#submit'][] = 'comment_sources_save_admin_form';
   return $form;
-}
-
-/**
- * Get the list of options that can be selected for each node type, in a format
- * that can be passed as '#options' to a radio button form element
- */
-function comment_sources_node_options($sources)
-{
-  foreach ($sources as $key => $value) {
-    $node_options[$key] = $value['description'];
-  }
-  $node_options['none'] = t("No Comments");
-  return $node_options;
 }
 
 /**

@@ -166,5 +166,13 @@ class CommentSourcesSetSourceTestCase extends CommentSourcesAPITestCase {
     $this->assertEqual('comment',$sources['article']);
   }
 
+  public function testCommentSourceSaveNoComment() {
+    $result = comment_sources_set_source('article','');
+    $this->assertTrue($result);
+    $sources = comment_sources_load(comment_sources_enabled_sources());
+    $this->assertEqual('',$sources['article']);
+  }
+
+
 }
 

@@ -70,12 +70,32 @@ function comment_sources_fb_social($source) {
  */
 function comment_sources_set_source($content_type, $source, $options = array()) {
   $enabled_sources = comment_sources_enabled_sources();
-  if (!array_key_exists($source,$enabled_sources) || !array_key_exists($content_type,node_type_get_types()))
-    return false;
-
   $selected_sources = comment_sources_load($enabled_sources);
-  $selected_sources[$content_type] = $source;
+
+  // Check for bogus content types
+  if (!array_key_exists($content_type,node_type_get_types())) {
+    return false;
+  }
+
+  if (!empty($source)) {
+    // Check for bogus comment sources
+    if (!array_key_exists($source,$enabled_sources))
+      return false;
+    $selected_sources[$content_type] = $source;
+  }
+  else {
+   unset($selected_sources[$content_type]);
+  }
   comment_sources_save($enabled_sources,$selected_sources);
 
   return true;
+}
+
+/**
+ * Get the comment source for a given content type
+ */
+function comment_sources_get_source($content_type) {
+  $enabled_sources = comment_sources_enabled_sources();
+  $selected_sources = comment_sources_load($enabled_sources);
+  return isset($selected_sources[$content_type]) ? $selected_sources[$content_type] : '';
 }
