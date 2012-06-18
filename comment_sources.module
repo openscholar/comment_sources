@@ -1,6 +1,6 @@
 <?php
 
-module_load_include('api.inc','comment_sources');
+module_load_include('api.inc', 'comment_sources');
 
 /**
  * Implements hook_menu().
@@ -19,7 +19,7 @@ function comment_sources_menu() {
 }
 
 /**
- * Implementation of hook_form_alter().
+ * Implements of hook_form_alter().
  */
 function comment_sources_form_alter(&$form, $form_state, $form_id) {
 
@@ -57,7 +57,7 @@ function comment_sources_form_alter(&$form, $form_state, $form_id) {
         $form['actions']['submit']['#submit'][] = '_comment_sources_node_type_form_submit';
       }
       else {
-        $form['actions']['submit']['#submit'] = array('_comment_sources_node_type_form_submit','node_type_form_submit');
+        $form['actions']['submit']['#submit'] = array('_comment_sources_node_type_form_submit', 'node_type_form_submit');
       }
     }
 
@@ -69,15 +69,14 @@ function comment_sources_form_alter(&$form, $form_state, $form_id) {
  */
 function _comment_sources_node_type_form_submit(&$form, $form_state) {
   if (isset($form['#node_type'])) {
-    comment_sources_set_source($form['#node_type']->type,$form['comment']['comment_source']['#value']);
+    comment_sources_set_source($form['#node_type']->type, $form['comment']['comment_source']['#value']);
   }
 }
 
 /**
  * Get the list of comment source options that can be used in a form element
  */
-function comment_sources_node_options($sources)
-{
+function comment_sources_node_options($sources) {
   $node_options = array();
   foreach ($sources as $key => $value) {
     $node_options[$key] = $value['description'];
@@ -107,13 +106,13 @@ function _comment_sources_preset_fb_social() {
 function comment_sources_load($sources) {
   $default_values = array();
   foreach (array_keys($sources) as $key) {
-    preg_match('/:(.*$)/',$key,$matches);
-    $function_name = "_comment_sources_load_" . preg_replace('/:.*$/','',$key);
+    preg_match('/:(.*$)/', $key, $matches);
+    $function_name = "_comment_sources_load_" . preg_replace('/:.*$/', '', $key);
     if (function_exists($function_name)) {
       $params = array();
       if (count($matches) > 1)
         $params[] = $matches[1];
-      $node_type_names = call_user_func_array($function_name,$params);
+      $node_type_names = call_user_func_array($function_name, $params);
       foreach ($node_type_names as $node_type_name) {
         $default_values[$node_type_name] = $key;
       }
@@ -121,7 +120,7 @@ function comment_sources_load($sources) {
   }
   /* Make sure that node types with no comment sources get a value in the array */
   foreach (node_type_get_types() as $node_type) {
-    if (!array_key_exists($node_type->type,$default_values)) {
+    if (!array_key_exists($node_type->type, $default_values)) {
       $default_values[$node_type->type] = '';
     }
 
@@ -175,14 +174,14 @@ function comment_sources_save($available_sources, $selected_sources) {
   }
 
   foreach ($available_sources as $key => $value) {
-    preg_match('/:(.*$)/',$key,$matches);
-    $function_name = "_comment_sources_save_" . preg_replace('/:.*$/','',$key);
+    preg_match('/:(.*$)/', $key, $matches);
+    $function_name = "_comment_sources_save_" . preg_replace('/:.*$/', '', $key);
     if (function_exists($function_name)) {
       $params = array(isset($selections[$key]) ? $selections[$key] : array());
       if (count($matches) > 1) { // If we need to add a preset
         $params[] = $matches[1];
       }
-      call_user_func_array($function_name,$params);
+      call_user_func_array($function_name, $params);
     }
   }
 }

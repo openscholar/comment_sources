@@ -14,7 +14,7 @@ class CommentSourcesAPITestCase extends DrupalWebTestCase {
     else {
       $modules = 'comment_sources';
     }
-    module_load_include("php","comment_sources","comment_sources.api");
+    module_load_include("php", "comment_sources", "comment_sources.api");
     parent::setUp($modules);
   }
 }
@@ -36,8 +36,8 @@ class CommentSourcesNoModulesTestCase extends CommentSourcesAPITestCase {
 
   public function testCommentSourcesGetSources() {
     $sources = comment_sources_enabled_sources();
-    $this->assertEqual(1,count($sources),$message = "With only core commenting modules enabled, only one sources should be available");
-    $this->assert(array_key_exists('comment',$sources));
+    $this->assertEqual(1, count($sources), $message = "With only core commenting modules enabled, only one sources should be available");
+    $this->assert(array_key_exists('comment', $sources));
   }
 }
 
@@ -57,9 +57,9 @@ class CommentSourcesDisqusEnabledTestCase extends CommentSourcesAPITestCase {
 
   public function testCommentSourcesGetSources() {
     $sources = comment_sources_enabled_sources();
-    $this->assertEqual(2,count($sources),$message = "With only Disqus commenting module enabled, two sources should be available");
-    $this->assert(array_key_exists('comment',$sources));
-    $this->assert(array_key_exists('disqus',$sources));
+    $this->assertEqual(2, count($sources), $message = "With only Disqus commenting module enabled, two sources should be available");
+    $this->assert(array_key_exists('comment', $sources));
+    $this->assert(array_key_exists('disqus', $sources));
   }
 }
 
@@ -143,34 +143,34 @@ class CommentSourcesSetSourceTestCase extends CommentSourcesAPITestCase {
   }
 
   public function testCommentSourceInvalidContentType() {
-    $result = comment_sources_set_source('bogus','disqus');
-    $this->assertFalse($result,$message = "Should fail due to bad content type");
+    $result = comment_sources_set_source('bogus', 'disqus');
+    $this->assertFalse($result, $message = "Should fail due to bad content type");
   }
 
   public function testCommentSourceInvalidSource() {
-    $result = comment_sources_set_source('article','bogus');
-    $this->assertFalse($result,$message = "Should fail due to bad comment source");
+    $result = comment_sources_set_source('article', 'bogus');
+    $this->assertFalse($result, $message = "Should fail due to bad comment source");
   }
 
   public function testCommentSourceSaveDisqusComment() {
-    $result = comment_sources_set_source('article','disqus');
+    $result = comment_sources_set_source('article', 'disqus');
     $this->assertTrue($result);
     $sources = comment_sources_load(comment_sources_enabled_sources());
-    $this->assertEqual('disqus',$sources['article']);
+    $this->assertEqual('disqus', $sources['article']);
   }
 
   public function testCommentSourceSaveDrupalComment() {
-    $result = comment_sources_set_source('article','comment');
+    $result = comment_sources_set_source('article', 'comment');
     $this->assertTrue($result);
     $sources = comment_sources_load(comment_sources_enabled_sources());
-    $this->assertEqual('comment',$sources['article']);
+    $this->assertEqual('comment', $sources['article']);
   }
 
   public function testCommentSourceSaveNoComment() {
-    $result = comment_sources_set_source('article','');
+    $result = comment_sources_set_source('article', '');
     $this->assertTrue($result);
     $sources = comment_sources_load(comment_sources_enabled_sources());
-    $this->assertEqual('',$sources['article']);
+    $this->assertEqual('', $sources['article']);
   }
 
 }
@@ -188,16 +188,16 @@ protected $privileged_user;
 
   public function setUp() {
     parent::setUp(array('disqus'));
-    $this->privileged_user = $this->drupalCreateUser(array('administer content types', 'edit own page content','administer comments'));
+    $this->privileged_user = $this->drupalCreateUser(array('administer content types', 'edit own page content', 'administer comments'));
     $this->drupalLogin($this->privileged_user);
   }
 
   public function testCommentSourceEditNodeType() {
     $this->drupalGet("admin/structure/types/manage/page");
     $this->assertResponse(200);
-    $this->assertFieldByName('comment_source','comment');
-    $this->drupalPost("admin/structure/types/manage/page",array('comment_source' => 'disqus'),t('Save content type'));
-    $this->assertEqual('disqus',comment_sources_get_source('page'));
+    $this->assertFieldByName('comment_source', 'comment');
+    $this->drupalPost("admin/structure/types/manage/page", array('comment_source' => 'disqus'), t('Save content type'));
+    $this->assertEqual('disqus', comment_sources_get_source('page'));
   }
 }
 
