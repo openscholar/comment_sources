@@ -173,6 +173,32 @@ class CommentSourcesSetSourceTestCase extends CommentSourcesAPITestCase {
     $this->assertEqual('',$sources['article']);
   }
 
-
 }
+
+class CommentSourcesNodeTypeFormEditTestCase extends CommentSourcesAPITestCase {
+protected $privileged_user;
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Content type edit page',
+      'description' => 'Test setting comment sources from the content type edit page',
+      'group' => 'Comment Sources',
+    );
+  }
+
+  public function setUp() {
+    parent::setUp(array('disqus'));
+    $this->privileged_user = $this->drupalCreateUser(array('administer content types', 'edit own page content','administer comments'));
+    $this->drupalLogin($this->privileged_user);
+  }
+
+  public function testCommentSourceEditNodeType() {
+    $this->drupalGet("admin/structure/types/manage/page");
+    $this->assertResponse(200);
+    $this->assertFieldByName('comment_source','comment');
+    $this->drupalPost("admin/structure/types/manage/page",array('comment_source' => 'disqus'),t('Save content type'));
+    $this->assertEqual('disqus',comment_sources_get_source('page'));
+  }
+}
+
 

@@ -28,12 +28,17 @@ function comment_sources_form_alter(&$form, $form_state, $form_id) {
     if (isset($form['comment'])) {
       $default_source = comment_sources_get_source($form['#node_type']->type);
 
+      /* Override the standard comment javascript with our improved version that also handles comment sources */
+      $form['comment']['#attached'] = array(
+        'js' => array(drupal_get_path('module', 'comment_sources') . '/comment_sources-node-form.js'),
+      );
+
+      /* Only display the default comment option controls if using Drupal comments */
       foreach ($form['comment'] as &$form_element) {
-        debug($form['comment']);
-        if (is_array($form_element)) {
+        if (is_array($form_element) && isset($form_element['#type'])) {
           $form_element['#states'] = array(
-            'hidden' => array(
-              'input[name="comment_source"]' => array('value' => 'comment')
+            'visible' => array(
+              ':input[name="comment_source"]' => array('value' => 'comment')
             )
           );
         }
@@ -47,45 +52,25 @@ function comment_sources_form_alter(&$form, $form_state, $form_id) {
         '#weight' => -20,
       );
 
+      // TODO: Test the case where this is an array. Need to find another module that hooks into the submit form
+      if (isset($form['actions']['submit']['#submit']) && is_array($form['actions']['submit']['#submit'])) {
+        $form['actions']['submit']['#submit'][] = '_comment_sources_node_type_form_submit';
+      }
+      else {
+        $form['actions']['submit']['#submit'] = array('_comment_sources_node_type_form_submit','node_type_form_submit');
+      }
     }
 
   }
+}
 
-
-// Allow toggling the comments on or off per node from the node edit form.
-//  if (!empty($form['#node_edit_form'])) {
-//    $node = $form['#node'];
-//    // Only display the toggle Disqus comments setting if comments are available
-//    // for the given node type.
-//    $types = variable_get('disqus_nodetypes', array());
-//    if (isset($types[$node->type]) && !empty($types[$node->type])) {
-//      // Add the Disqus settings into the Comment settings fieldset if it exists.
-//      if (!isset($form['comment_settings'])) {
-//        $form['comment_settings'] = array(
-//          '#type' => 'fieldset',
-//          '#access' => user_access('toggle disqus comments'),
-//          '#title' => t('Comment settings'),
-//          '#collapsible' => TRUE,
-//          '#collapsed' => TRUE,
-//          '#group' => 'additional_settings',
-//          '#weight' => 30,
-//        );
-//      }
-//      else {
-//        if (isset($form['comment_settings']['comment'])) {
-//          $form['comment_settings']['comment']['#access'] = $form['comment_settings']['#access'];
-//          $form['comment_settings']['#access'] = true;
-//        }
-//      }
-//      $form['comment_settings']['disqus_status'] = array(
-//        '#type' => 'checkbox',
-//        '#title' => t('Disqus comments'),
-//        '#description' => t('Users can post comments using <a href="@disqus">Disqus</a>.', array('@disqus' => 'http://disqus.com')),
-//        '#default_value' => isset($node->disqus['status']) ? $node->disqus['status'] : TRUE,
-//        '#access' => user_access('toggle disqus comments'),
-//      );
-//    }
-//  }
+/**
+ *  Save the comment source setting for a content type
+ */
+function _comment_sources_node_type_form_submit(&$form, $form_state) {
+  if (isset($form['#node_type'])) {
+    comment_sources_set_source($form['#node_type']->type,$form['comment']['comment_source']['#value']);
+  }
 }
 
 /**
@@ -93,6 +78,7 @@ function comment_sources_form_alter(&$form, $form_state, $form_id) {
  */
 function comment_sources_node_options($sources)
 {
+  $node_options = array();
   foreach ($sources as $key => $value) {
     $node_options[$key] = $value['description'];
   }
