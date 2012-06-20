@@ -60,8 +60,34 @@ function comment_sources_form_alter(&$form, $form_state, $form_id) {
         $form['actions']['submit']['#submit'] = array('_comment_sources_node_type_form_submit', 'node_type_form_submit');
       }
     }
+  }
+  // Node edit page
+  elseif (!empty($form['#node_edit_form'])) {
+    // Hide settings for inappropriate comment types
+    $node = $form['#node'];
+    if (isset($node->type)) {
+      $default_source = comment_sources_get_source($node->type);
+      $default_source = preg_replace('/:.*$/', '', $default_source); // Remove the preset name from fb_social sources
+      switch ($default_source) {
+        case 'comment':
+        case '':
+          unset($form['comment_settings']['disqus_status']);
+          unset($form['comment_settings']['fb_social_status']);
+          break;
+        case 'disqus':
+          unset($form['comment_settings']['comment']);
+          unset($form['comment_settings']['fb_social_status']);
+          break;
+        case 'fb_social':
+          unset($form['comment_settings']['comment']);
+          unset($form['comment_settings']['disqus_status']);
+          break;
+      }
+
+    }
 
   }
+
 }
 
 /**
@@ -213,7 +239,7 @@ function _comment_sources_save_comment($comment_node_types) {
   foreach ($node_types as $node_type) {
     variable_set(
       "comment_" . $node_type->type,
-      isset($comment_node_types[$node_type->type]) ? COMMENT_NODE_OPEN : COMMENT_NODE_CLOSED
+      isset($comment_node_types[$node_type->type]) ? COMMENT_NODE_OPEN : COMMENT_NODE_HIDDEN
     );
   }
 }

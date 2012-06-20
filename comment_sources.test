@@ -6,8 +6,11 @@
  */
 
 class CommentSourcesAPITestCase extends DrupalWebTestCase {
+  protected $web_user;
+  protected $privileged_user;
 
   public function setUp($modules) {
+    $this->privileged_user = $this->drupalCreateUser(array('administer content types', 'edit own page content', 'administer comments'));
     if (is_array($modules)) {
       $modules[] = 'comment_sources';
     }
@@ -17,8 +20,27 @@ class CommentSourcesAPITestCase extends DrupalWebTestCase {
     module_load_include("php", "comment_sources", "comment_sources.api");
     parent::setUp($modules);
   }
-}
 
+  public function create_page_node() {
+    $settings = array(
+      'title' => $this->randomName(32),
+      'body[und][0][value]' => $this->randomName(64),
+    );
+    $this->drupalPost("node/add/page", $settings,t("Save"));
+  }
+
+  protected function setup_fb_social_preset() {
+    $data = array(
+      'name' => 'Comments',
+      'description' => 'Comments',
+      'plugin_type' => 'comments',
+      'settings' => 'a:5:{s:10:"node_types";a:1:{s:5:"types";a:1:{s:4:"page";s:4:"page";}}s:15:"plugin_location";a:1:{s:15:"node_view_modes";a:5:{s:4:"full";s:4:"full";s:6:"teaser";s:6:"teaser";s:3:"rss";i:0;s:12:"search_index";i:0;s:13:"search_result";i:0;}}s:21:"plugin_comments_count";a:2:{s:5:"count";i:1;s:5:"cache";s:2:"30";}s:19:"plugin_comments_seo";a:3:{s:3:"seo";i:0;s:11:"nr_comments";s:3:"100";s:12:"cache_length";s:3:"720";}s:5:"block";i:0;}',
+      'fb_attrs' => 'a:4:{s:8:"numposts";s:2:"10";s:5:"width";s:3:"550";s:11:"colorscheme";s:5:"light";s:8:"migrated";i:0;}',
+    );
+    drupal_write_record('fb_social_preset', $data);
+    ctools_export_load_object_reset("fb_social_preset");
+  }
+}
 
 class CommentSourcesNoModulesTestCase extends CommentSourcesAPITestCase {
 
@@ -63,70 +85,30 @@ class CommentSourcesDisqusEnabledTestCase extends CommentSourcesAPITestCase {
   }
 }
 
-// TODO: Need to figure out how to test for successful retrieval of fb_social presets. Will require creating
-// TODO: a preset and saving it for the test.
+class CommentSourcesFacebookEnabledTestCase extends CommentSourcesAPITestCase {
 
-//class CommentSourcesFacebookEnabledTestCase extends CommentSourcesAPITestCase {
-//
-//  public static function getInfo() {
-//    return array(
-//      'name' => 'Facebook Enabled Tests',
-//      'description' => 'Test case where Faceboko and Disqus comments enabled',
-//      'group' => 'Comment Sources',
-//    );
-//  }
-//
-//  public function setUp() {
-//    parent::setUp(array('disqus','fb_social'));
-//
-//    // Setup a preset
-//    $fb_social_preset = new stdClass();
-//    $fb_social_preset->disabled = FALSE; /* Edit this to true to make a default fb_social_preset disabled initially */
-//    $fb_social_preset->api_version = 1;
-//    $fb_social_preset->name = 'Comments';
-//    $fb_social_preset->description = 'Comments';
-//    $fb_social_preset->plugin_type = 'comments';
-//    $fb_social_preset->settings = array(
-//      'node_types' => array(
-//        'types' => array(),
-//      ),
-//      'plugin_location' => array(
-//        'node_view_modes' => array(
-//          'full' => 'full',
-//          'teaser' => 'teaser',
-//          'rss' => 0,
-//          'search_index' => 0,
-//          'search_result' => 0,
-//        ),
-//      ),
-//      'plugin_comments_count' => array(
-//        'count' => 1,
-//        'cache' => '30',
-//      ),
-//      'plugin_comments_seo' => array(
-//        'seo' => 0,
-//        'nr_comments' => '100',
-//        'cache_length' => '720',
-//      ),
-//      'block' => 0,
-//    );
-//    $fb_social_preset->fb_attrs = array(
-//      'numposts' => '10',
-//      'width' => '550',
-//      'colorscheme' => 'light',
-//      'migrated' => 0,
-//    );
-//    $fb_social_preset->export_type = false;
-//    ctools_export_crud_save('fb_social_preset',$fb_social_preset);
-//  }
-//
-//  public function testCommentSourcesGetSources() {
-//    $sources = comment_sources_enabled_sources();
-//    $this->assertEqual(2,count($sources),$message = "With only Disqus commenting module enabled, two sources should be available");
-//    $this->assert(array_key_exists('comment',$sources));
-//    $this->assert(array_key_exists('disqus',$sources));
-//  }
-//}
+  public static function getInfo() {
+    return array(
+      'name' => 'Facebook Enabled Tests',
+      'description' => 'Test case where Faceboko and Disqus comments enabled',
+      'group' => 'Comment Sources',
+    );
+  }
+
+  public function setUp() {
+    parent::setUp(array('disqus','fb_social'));
+    $this->setup_fb_social_preset();
+  }
+
+  public function testCommentSourcesGetSources() {
+
+    $sources = comment_sources_enabled_sources();debug($sources);
+    $this->assertEqual(3,count($sources));
+    $this->assert(array_key_exists('comment',$sources));
+    $this->assert(array_key_exists('disqus',$sources));
+    $this->assert(array_key_exists('fb_social:Comments',$sources));
+  }
+}
 
 class CommentSourcesSetSourceTestCase extends CommentSourcesAPITestCase {
 
@@ -139,7 +121,7 @@ class CommentSourcesSetSourceTestCase extends CommentSourcesAPITestCase {
   }
 
   public function setUp() {
-    parent::setUp(array('disqus'));
+    parent::setUp(array('disqus','fb_social'));
   }
 
   public function testCommentSourceInvalidContentType() {
@@ -166,6 +148,14 @@ class CommentSourcesSetSourceTestCase extends CommentSourcesAPITestCase {
     $this->assertEqual('comment', $sources['article']);
   }
 
+//  public function testCommentSourceSaveFacebookComment() {
+//    $this->setup_fb_social_preset();
+//    $result = comment_sources_set_source('article', 'fb_social:Comments');
+//    $this->assertTrue($result);
+//    $sources = comment_sources_load(comment_sources_enabled_sources());
+//    $this->assertEqual('fb_social:Comments', $sources['article']);
+//  }
+
   public function testCommentSourceSaveNoComment() {
     $result = comment_sources_set_source('article', '');
     $this->assertTrue($result);
@@ -176,7 +166,6 @@ class CommentSourcesSetSourceTestCase extends CommentSourcesAPITestCase {
 }
 
 class CommentSourcesNodeTypeFormEditTestCase extends CommentSourcesAPITestCase {
-protected $privileged_user;
 
   public static function getInfo() {
     return array(
@@ -188,7 +177,7 @@ protected $privileged_user;
 
   public function setUp() {
     parent::setUp(array('disqus'));
-    $this->privileged_user = $this->drupalCreateUser(array('administer content types', 'edit own page content', 'administer comments'));
+    $this->privileged_user = $this->drupalCreateUser(array('view disqus comments', 'administer content types', 'edit own page content', 'administer comments', 'create page content'));
     $this->drupalLogin($this->privileged_user);
   }
 
@@ -201,4 +190,88 @@ protected $privileged_user;
   }
 }
 
+class CommentSourcesNodeFormEditTestCase extends CommentSourcesAPITestCase {
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Node edit page',
+      'description' => 'Test managing comments from the node edit page',
+      'group' => 'Comment Sources',
+    );
+  }
+
+  public function setUp() {
+    parent::setUp(array('disqus'));
+    $this->privileged_user = $this->drupalCreateUser(array('view disqus comments', 'toggle disqus comments', 'administer content types', 'edit own page content', 'administer comments', 'create page content'));
+    $this->drupalLogin($this->privileged_user);
+  }
+
+  public function testCommentSourceDisableDrupalComments() {
+    comment_sources_set_source('page', 'comment');
+    $this->create_page_node();
+    $this->drupalGet("node/1/edit");
+    $this->assertFieldByName('comment');
+    $this->assertNoFieldByName('disqus_status');
+    $this->drupalPost('node/1/edit',array(
+          'title' => $this->randomName(32),
+          'body[und][0][value]' => $this->randomName(64),
+          'comment' => 1,
+        ),t("Save"));
+    $this->drupalGet("node/1");
+    $this->assertNoFieldByName('comment_body[und][0][value]');
+    $this->assertNoRaw('disqus_thread');
+  }
+
+  public function testCommentSourceDisableDisqusComments() {
+    comment_sources_set_source('page', 'disqus');
+    $this->create_page_node();
+    $this->drupalGet("node/1/edit");
+    $this->assertFieldByName('disqus_status');
+    $this->drupalPost('node/1/edit',array(
+          'title' => $this->randomName(32),
+          'body[und][0][value]' => $this->randomName(64),
+          'disqus_status' => FALSE,
+        ),t("Save"));
+    $this->drupalGet("node/1");
+    $this->assertNoFieldByName('comment_body[und][0][value]');
+    $this->assertNoRaw('disqus_thread');
+  }
+}
+
+class CommentSourcesDisplayCommentsTestCase extends CommentSourcesAPITestCase {
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Node view page',
+      'description' => 'Test comment sources set comment display correctly',
+      'group' => 'Comment Sources',
+    );
+  }
+
+  public function setUp() {
+    parent::setUp(array('disqus'));
+    variable_set('disqus_domain','localhost');
+
+    $this->web_user = $this->drupalCreateUser(array('access comments', 'post comments', 'create article content', 'edit own comments', 'view disqus comments'));
+    $this->privileged_user = $this->drupalCreateUser(array('view disqus comments', 'toggle disqus comments', 'administer content types', 'edit own page content', 'administer comments', 'create page content'));
+    $this->drupalLogin($this->privileged_user);
+  }
+
+  public function testCommentSourceDrupalComments() {
+    comment_sources_set_source('page', 'comment');
+    $this->create_page_node();
+    $this->drupalGet("node/1");
+    $this->assertFieldByName('comment_body[und][0][value]');
+    $this->assertNoRaw('disqus_thread');
+  }
+
+  public function testCommentSourceDisqusComments() {
+    comment_sources_set_source('page', 'disqus');
+    $this->create_page_node();
+    $this->drupalGet("node/1");
+    $this->assertNoFieldByName('comment_body[und][0][value]');
+    $this->assertRaw('disqus_thread');
+  }
+
+}
 
