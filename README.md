@@ -9,13 +9,13 @@
 ### Administration
 
 * admin/structure/comment_sources - Configure comment sources for all content types
-* admin/structure/types/manage/<content-type> - Configure comment source for a content type
+* admin/structure/types/manage/[content-type] - Configure comment source for a content type
+* node edit page - Disable comments for disqus/Drupal/fb_social comments, depending on selected comment source for that content type. (Disabling fb_social comments depends on fb_social patch)
 
 ## Not yet implemented
 
-* Unit tests to validate that correct comments are being displayed on node pages
+* Unit tests to validate that facebook comments are being displayed on node pages correctly
 * Unit tests for saving/loading fb_social presets
 * API to save comment configuration options, in addition to mapping from content type to comment type
-* UI to administer comment settings for node
 * API for recent comments
 * UI to moderate comments
