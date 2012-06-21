@@ -99,3 +99,15 @@ function comment_sources_get_source($content_type) {
   $selected_sources = comment_sources_load($enabled_sources);
   return isset($selected_sources[$content_type]) ? $selected_sources[$content_type] : '';
 }
+
+/**
+ * Get the most recent comments for a content source and content type
+ */
+function comment_sources_recent_comments($source, $content_type = 'all', $count = 10) {
+  $result = array();
+  $function_name = "_comment_sources_recent_comments_" . $source;
+  if (function_exists($function_name)) {
+    $result = call_user_func_array($function_name, array($content_type == 'all' ? '' : $content_type, $count));
+  }
+  return $result;
+}
