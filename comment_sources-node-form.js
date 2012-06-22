@@ -4,7 +4,20 @@
 Drupal.behaviors.commentFieldsetSummaries = {
   attach: function (context) {
     $('fieldset.comment-node-settings-form', context).drupalSetSummary(function (context) {
-      return Drupal.checkPlain($('.form-item-comment input:checked', context).next('label').text());
+      var vals = [];
+      var comment_status = $('.form-item-comment input:checked', context).next('label').text();
+      if (comment_status) {
+        vals.push(comment_status);
+      }
+      if ($('.form-item-fb-social-status input').is(":checked")) {
+        vals.push($('.form-item-fb-social-status input', context).next('label').text());
+      }
+
+      if ($('.form-item-disqus-status input').is(":checked")) {
+        vals.push($('.form-item-disqus-status input', context).next('label').text());
+      }
+
+      return Drupal.checkPlain(vals.join(', '));
     });
 
     // Provide the summary for the node type form.

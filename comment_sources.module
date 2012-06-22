@@ -92,6 +92,12 @@ function comment_sources_form_alter(&$form, $form_state, $form_id) {
           $form['comment_settings']['#access'] = user_access('toggle facebook comments');
           break;
       }
+      /* Override the standard comment javascript with our improved version that also handles comment sources */
+      if (isset($form['comment_settings'])) {
+        $form['comment_settings']['#attached'] = array(
+          'js' => array(drupal_get_path('module', 'comment_sources') . '/comment_sources-node-form.js'),
+        );
+      }
     }
   }
 }
