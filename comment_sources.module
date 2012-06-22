@@ -8,16 +8,16 @@ module_load_include('api.inc', 'comment_sources');
 function comment_sources_menu() {
   $items = array();
   $items['admin/structure/comment_sources'] = array(
-    'title' => t('Comment Sources'),
-    'description' => t('Select commenting system(s) to use'),
+    'title' => 'Comment Sources',
+    'description' => 'Select commenting system(s) to use',
     'access arguments' => array('administer comments and comment settings'),
     'page callback' => 'drupal_get_form',
     'page arguments' => array('comment_sources_admin_settings_form'),
     'file' => 'comment_sources.admin.inc',
   );
   $items['comment_sources/record_comment'] = array(
-    'title' => t('Record new comment'),
-    'description' => t('Record creation of a new comment by a third-party commenting source'),
+    'title' => 'Record new comment',
+    'description' => 'Record creation of a new comment by a third-party commenting source',
     'access arguments' => array('access content'),
     'page callback' => 'comment_sources_record_comment_ajax',
     'type' => MENU_CALLBACK,
