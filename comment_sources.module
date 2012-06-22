@@ -84,10 +84,12 @@ function comment_sources_form_alter(&$form, $form_state, $form_id) {
         case 'disqus':
           unset($form['comment_settings']['comment']);
           unset($form['comment_settings']['fb_social_status']);
+          $form['comment_settings']['#access'] = user_access('toggle disqus comments');
           break;
         case 'fb_social':
           unset($form['comment_settings']['comment']);
           unset($form['comment_settings']['disqus_status']);
+          $form['comment_settings']['#access'] = user_access('toggle facebook comments');
           break;
       }
 
