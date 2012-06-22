@@ -36,8 +36,7 @@ function comment_sources_enabled_sources() {
 
   // Check to ensure the comment source modules are enabled
   foreach ($sources as $key => $value) {
-    $info = system_get_info('module', $key);
-    if (count($info) > 0) {
+    if (module_exists($key)) {
       if (isset($value['children_callback'])) {
         $enabled_sources = array_merge($enabled_sources, call_user_func($value['children_callback'], $value));
       }
