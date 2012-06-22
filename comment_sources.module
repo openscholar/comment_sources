@@ -26,7 +26,7 @@ function comment_sources_menu() {
 }
 
 /**
- * Implements of hook_form_alter().
+ * Implements hook_form_alter().
  */
 function comment_sources_form_alter(&$form, $form_state, $form_id) {
 
@@ -357,3 +357,13 @@ function comment_sources_fb_social_event_subscribe() {
     '});'
   );
 }
+
+/**
+ * Implements hook_views_api
+ */
+function comment_sources_views_api() {
+  return array(
+    'api' => 3.0,
+  );
+}
+
