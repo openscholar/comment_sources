@@ -92,11 +92,8 @@ function comment_sources_form_alter(&$form, $form_state, $form_id) {
           $form['comment_settings']['#access'] = user_access('toggle facebook comments');
           break;
       }
-
     }
-
   }
-
 }
 
 /**
