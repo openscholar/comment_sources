@@ -20,6 +20,7 @@ function comment_sources_menu() {
     'description' => t('Record creation of a new comment by a third-party commenting source'),
     'access arguments' => array('access content'),
     'page callback' => 'comment_sources_record_comment_ajax',
+    'type' => MENU_CALLBACK,
   );
   return $items;
 }
@@ -277,15 +278,17 @@ function _comment_sources_recent_comments_comment($content_type, $count) {
 }
 
 /**
- * Get the most recent Disqus comments for a content type
+ * Get the most recent comments from an external commenting source as tracked by our table that logs an entry
+ * whenever a non-Drupal comment is made
  */
-function _comment_sources_recent_comments_disqus($content_type, $count) {
+function _comment_sources_recent_comments_external($source, $content_type, $count) {
   $query = db_select('comment_sources_comments', 'c');
   $query->innerJoin('node', 'n', 'n.nid = c.nid');
   $query->addTag('node_access');
   $query
       ->fields('c')
-      ->condition('n.status', NODE_PUBLISHED);
+      ->condition('n.status', NODE_PUBLISHED)
+      ->condition('c.source', $source);
   if (!empty($content_type)) {
     $query->condition('n.type', $content_type);
   }
@@ -299,6 +302,21 @@ function _comment_sources_recent_comments_disqus($content_type, $count) {
     ->fetchAll();
 
   return $comments ? $comments : array();
+}
+
+
+/**
+ * Get the most recent Disqus comments for a content type
+ */
+function _comment_sources_recent_comments_disqus($content_type, $count) {
+  return _comment_sources_recent_comments_external('disqus', $content_type, $count);
+}
+
+/**
+ * Get the most recent Facebook comments for a content type
+ */
+function _comment_sources_recent_comments_fb_social($content_type, $count) {
+  return _comment_sources_recent_comments_external('fb_social', $content_type, $count);
 }
 
 /**
@@ -326,4 +344,16 @@ function comment_sources_record_comment_ajax() {
   if (!empty($data['source']) && !empty($data['nid'])) {
     drupal_write_record('comment_sources_comments',$data);
   }
+}
+
+/**
+ * Implementation of hook_fb_social_event_subscribe
+ */
+function comment_sources_fb_social_event_subscribe() {
+  // integration with google analytics
+  return array(
+    'FB.Event.subscribe("comment.create", function(response) {',
+    'fb_social_track_comments(response);',
+    '});'
+  );
 }
