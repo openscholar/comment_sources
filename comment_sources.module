@@ -342,12 +342,12 @@ function comment_sources_record_comment_ajax() {
     'subject' => filter_input(INPUT_GET, 'subject', FILTER_SANITIZE_STRING),
   );
   if (!empty($data['source']) && !empty($data['nid'])) {
-    drupal_write_record('comment_sources_comments',$data);
+    drupal_write_record('comment_sources_comments', $data);
   }
 }
 
 /**
- * Implementation of hook_fb_social_event_subscribe
+ * Implements hook_fb_social_event_subscribe().
  */
 function comment_sources_fb_social_event_subscribe() {
   // integration with google analytics
@@ -359,11 +359,10 @@ function comment_sources_fb_social_event_subscribe() {
 }
 
 /**
- * Implements hook_views_api
+ * Implements hook_views_api().
  */
 function comment_sources_views_api() {
   return array(
     'api' => 3.0,
   );
 }
-

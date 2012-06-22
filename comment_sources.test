@@ -26,7 +26,7 @@ class CommentSourcesAPITestCase extends DrupalWebTestCase {
       'title' => $this->randomName(32),
       'body[und][0][value]' => $this->randomName(64),
     );
-    $this->drupalPost("node/add/page", $settings,t("Save"));
+    $this->drupalPost("node/add/page", $settings, t("Save"));
   }
 
   protected function setup_fb_social_preset() {
@@ -96,17 +96,17 @@ class CommentSourcesFacebookEnabledTestCase extends CommentSourcesAPITestCase {
   }
 
   public function setUp() {
-    parent::setUp(array('disqus','fb_social'));
+    parent::setUp(array('disqus', 'fb_social'));
     $this->setup_fb_social_preset();
   }
 
   public function testCommentSourcesGetSources() {
 
     $sources = comment_sources_enabled_sources();debug($sources);
-    $this->assertEqual(3,count($sources));
-    $this->assert(array_key_exists('comment',$sources));
-    $this->assert(array_key_exists('disqus',$sources));
-    $this->assert(array_key_exists('fb_social:Comments',$sources));
+    $this->assertEqual(3, count($sources));
+    $this->assert(array_key_exists('comment', $sources));
+    $this->assert(array_key_exists('disqus', $sources));
+    $this->assert(array_key_exists('fb_social:Comments', $sources));
   }
 }
 
@@ -121,7 +121,7 @@ class CommentSourcesSetSourceTestCase extends CommentSourcesAPITestCase {
   }
 
   public function setUp() {
-    parent::setUp(array('disqus','fb_social'));
+    parent::setUp(array('disqus', 'fb_social'));
   }
 
   public function testCommentSourceInvalidContentType() {
@@ -212,11 +212,11 @@ class CommentSourcesNodeFormEditTestCase extends CommentSourcesAPITestCase {
     $this->drupalGet("node/1/edit");
     $this->assertFieldByName('comment');
     $this->assertNoFieldByName('disqus_status');
-    $this->drupalPost('node/1/edit',array(
+    $this->drupalPost('node/1/edit', array(
           'title' => $this->randomName(32),
           'body[und][0][value]' => $this->randomName(64),
           'comment' => 1,
-        ),t("Save"));
+        ), t("Save"));
     $this->drupalGet("node/1");
     $this->assertNoFieldByName('comment_body[und][0][value]');
     $this->assertNoRaw('disqus_thread');
@@ -227,11 +227,11 @@ class CommentSourcesNodeFormEditTestCase extends CommentSourcesAPITestCase {
     $this->create_page_node();
     $this->drupalGet("node/1/edit");
     $this->assertFieldByName('disqus_status');
-    $this->drupalPost('node/1/edit',array(
+    $this->drupalPost('node/1/edit', array(
           'title' => $this->randomName(32),
           'body[und][0][value]' => $this->randomName(64),
           'disqus_status' => FALSE,
-        ),t("Save"));
+        ), t("Save"));
     $this->drupalGet("node/1");
     $this->assertNoFieldByName('comment_body[und][0][value]');
     $this->assertNoRaw('disqus_thread');
@@ -250,7 +250,7 @@ class CommentSourcesDisplayCommentsTestCase extends CommentSourcesAPITestCase {
 
   public function setUp() {
     parent::setUp(array('disqus'));
-    variable_set('disqus_domain','localhost');
+    variable_set('disqus_domain', 'localhost');
 
     $this->web_user = $this->drupalCreateUser(array('access comments', 'post comments', 'create article content', 'edit own comments', 'view disqus comments'));
     $this->privileged_user = $this->drupalCreateUser(array('view disqus comments', 'toggle disqus comments', 'administer content types', 'edit own page content', 'administer comments', 'create page content'));

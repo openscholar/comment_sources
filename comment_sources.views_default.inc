@@ -1,6 +1,11 @@
 <?php
 
 /**
+ * @file
+ * Default views for this module
+ */
+
+/**
  * Implements hook_views_default_views().
  */
 function comment_sources_views_default_views() {
