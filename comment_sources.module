@@ -30,24 +30,24 @@ function comment_sources_menu() {
  * In some cases (fb_social) a module can provide multiple comment sources. If that's the case, provide a callback
  * function to retrieve each comment source associated with that module.
  */
-function comment_sources_comment_sources() {
+function _comment_sources_sources() {
   $base_sources = array(
     'comment' => array(
       'description' => t('Drupal Comments'),
+      'supports_recent_comments' => TRUE,
       ),
     'disqus' => array(
       'description' => t('Disqus Comments'),
+      'supports_recent_comments' => TRUE,
     ),
     'fb_social' => array(
       'description' => t('Facebook Comments'),
+      'supports_recent_comments' => FALSE,
       'children_callback' => 'comment_sources_fb_social',
     )
   );
-  return $base_sources;
-}
-
-function _comment_sources_sources() {
-  return module_invoke_all("comment_sources");
+  $other_sources = module_invoke_all("comment_sources");
+  return array_merge_recursive($base_sources,$other_sources);
 }
 
 /**
@@ -123,13 +123,22 @@ function comment_sources_get_source($content_type) {
 }
 
 /**
+ * Does the content source support retrieving recent comments
+ */
+function comment_sources_supports_recent_comments($source) {
+  $sources = _comment_sources_sources();
+  $result = isset($sources[$source]) ? $sources[$source]['supports_recent_comments'] : FALSE;
+  return $result;
+}
+
+/**
  * Get the most recent comments for a content source and content type
  */
-function comment_sources_recent_comments($source, $content_type = 'all', $count = 10) {
+function comment_sources_recent_comments($source, $count = 10) {
   $result = array();
   $function_name = "_comment_sources_recent_comments_" . $source;
   if (function_exists($function_name)) {
-    $result = call_user_func_array($function_name, array($content_type == 'all' ? '' : $content_type, $count));
+    $result = call_user_func_array($function_name, $count);
   }
   return $result;
 }
@@ -365,7 +374,7 @@ function _comment_sources_save_comment($comment_node_types) {
 /**
  * Get the most recent Drupal comments for a content type
  */
-function _comment_sources_recent_comments_comment($content_type, $count) {
+function _comment_sources_recent_comments_comment($count) {
   $query = db_select('comment', 'c');
   $query->innerJoin('node', 'n', 'n.nid = c.nid');
   $query->addTag('node_access');
@@ -373,9 +382,6 @@ function _comment_sources_recent_comments_comment($content_type, $count) {
       ->fields('c')
       ->condition('c.status', COMMENT_PUBLISHED)
       ->condition('n.status', NODE_PUBLISHED);
-  if (!empty($content_type)) {
-    $query->condition('n.type', $content_type);
-  }
   $comments = $query
     ->orderBy('c.created', 'DESC')
     // Additionally order by cid to ensure that comments with the same timestamp
@@ -389,45 +395,18 @@ function _comment_sources_recent_comments_comment($content_type, $count) {
 }
 
 /**
- * Get the most recent comments from an external commenting source as tracked by our table that logs an entry
- * whenever a non-Drupal comment is made
- */
-function _comment_sources_recent_comments_external($source, $content_type, $count) {
-  $query = db_select('comment_sources_comments', 'c');
-  $query->innerJoin('node', 'n', 'n.nid = c.nid');
-  $query->addTag('node_access');
-  $query
-      ->fields('c')
-      ->condition('n.status', NODE_PUBLISHED)
-      ->condition('c.source', $source);
-  if (!empty($content_type)) {
-    $query->condition('n.type', $content_type);
-  }
-  $comments = $query
-    ->orderBy('c.timestamp', 'DESC')
-    // Additionally order by cid to ensure that comments with the same timestamp
-    // are returned in the exact order posted.
-    ->orderBy('c.cid', 'DESC')
-    ->range(0, $count)
-    ->execute()
-    ->fetchAll();
-
-  return $comments ? $comments : array();
-}
-
-
-/**
  * Get the most recent Disqus comments for a content type
  */
 function _comment_sources_recent_comments_disqus($content_type, $count) {
-  return _comment_sources_recent_comments_external('disqus', $content_type, $count);
+// TODO: Implement this
+//  return _comment_sources_recent_comments_external('disqus', $content_type, $count);
 }
 
 /**
  * Get the most recent Facebook comments for a content type
  */
 function _comment_sources_recent_comments_fb_social($content_type, $count) {
-  return _comment_sources_recent_comments_external('fb_social', $content_type, $count);
+  return array();
 }
 
 /**
