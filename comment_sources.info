@@ -1,4 +1,4 @@
-name = Comment Sources
+name = "Comment Sources"
 description = "Select among different commenting options"
 core = 7.x
 
