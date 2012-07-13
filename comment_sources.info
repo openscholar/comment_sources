@@ -1,7 +1,7 @@
-name = "comment_sources"
+name = Comment Sources
 description = "Select among different commenting options"
 core = 7.x
 
 files[] = comment_sources.test
 
-configure = admin/structure/comment_sources
+configure = admin/config/services/comment_sources

@@ -7,7 +7,7 @@ module_load_include('api.inc', 'comment_sources');
  */
 function comment_sources_menu() {
   $items = array();
-  $items['admin/structure/comment_sources'] = array(
+  $items['admin/config/services/comment_sources'] = array(
     'title' => 'Comment Sources',
     'description' => 'Select commenting system(s) to use',
     'access arguments' => array('administer comments and comment settings'),
@@ -122,8 +122,6 @@ function comment_sources_node_options($sources) {
   return $node_options;
 }
 
-
-
 /**
  * Get Facebook Social comment presets
  */
@@ -134,7 +132,6 @@ function _comment_sources_preset_fb_social() {
   }
   return $presets;
 }
-
 
 /**
  * Load the existing comment source selections and return as an associative array of comment sources keyed by node type
