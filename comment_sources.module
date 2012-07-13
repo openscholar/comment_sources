@@ -30,7 +30,7 @@ function comment_sources_menu() {
  * In some cases (fb_social) a module can provide multiple comment sources. If that's the case, provide a callback
  * function to retrieve each comment source associated with that module.
  */
-function comment_sources_sources() {
+function comment_sources_comment_sources() {
   $base_sources = array(
     'comment' => array(
       'description' => t('Drupal Comments'),
@@ -46,11 +46,15 @@ function comment_sources_sources() {
   return $base_sources;
 }
 
+function _comment_sources_sources() {
+  return module_invoke_all("comment_sources");
+}
+
 /**
  * Get a list of the currently enabled comment sources
  */
 function comment_sources_enabled_sources() {
-  $sources = comment_sources_sources();
+  $sources = _comment_sources_sources();
   $enabled_sources = array();
 
   // Check to ensure the comment source modules are enabled
