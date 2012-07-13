@@ -67,7 +67,7 @@ function comment_sources_fb_social($source) {
 /**
  * Set the comment source for a given content type, with options appropriate to that comment source
  */
-function comment_sources_set_source($content_type, $source, $options = array()) {
+function comment_sources_set_source($content_type, $source) {
   $enabled_sources = comment_sources_enabled_sources();
   $selected_sources = comment_sources_load($enabled_sources);
 
