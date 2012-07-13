@@ -275,3 +275,28 @@ class CommentSourcesDisplayCommentsTestCase extends CommentSourcesAPITestCase {
 
 }
 
+class CommentSourcesSupportsRecentCommentsTestCase extends DrupalWebTestCase {
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Support for recent comments',
+      'description' => 'Test comment sources reports support of recent comments correctly',
+      'group' => 'Comment Sources',
+    );
+  }
+
+  public function testCommentSourceDrupalRecentCommentsSupported() {
+    $this->assertTrue(comment_sources_supports_recent_comments('comment'));
+  }
+
+  public function testCommentSourceDisqusRecentCommentsSupported() {
+    $this->assertTrue(comment_sources_supports_recent_comments('disqus'));
+  }
+
+  public function testCommentSourceFacebookRecentCommentsSupported() {
+    $this->assertFalse(comment_sources_supports_recent_comments('fb_social'));
+  }
+
+}
+
+
