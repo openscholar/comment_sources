@@ -138,7 +138,7 @@ function comment_sources_recent_comments($source, $count = 10) {
   $result = array();
   $function_name = "_comment_sources_recent_comments_" . $source;
   if (function_exists($function_name)) {
-    $result = call_user_func_array($function_name, $count);
+    $result = call_user_func_array($function_name, array($count));
   }
   return $result;
 }
@@ -397,9 +397,35 @@ function _comment_sources_recent_comments_comment($count) {
 /**
  * Get the most recent Disqus comments for a content type
  */
-function _comment_sources_recent_comments_disqus($content_type, $count) {
-// TODO: Implement this
-//  return _comment_sources_recent_comments_external('disqus', $content_type, $count);
+function _comment_sources_recent_comments_disqus($count) {
+  $posts = array();
+
+  $user_api_key = variable_get('disqus_userapikey', '');
+  if (empty($user_api_key)) {
+    watchdog('comment_sources', "User API key required to display recent Disqus comments", array(), WATCHDOG_ERROR);
+  }
+  else {
+    try {
+      $disqus = disqus($user_api_key);
+      $forums = $disqus->get_forum_list();
+      if (count($forums) != 1) {
+        watchdog('comment_sources', "More than one Disqus forum returned. Cannot display recent Disqus comments", array(), WATCHDOG_ERROR);
+      }
+      else {
+        $forum_id = $forums[0]->id;
+        $forum_api_key = $disqus->get_forum_api_key($forum_id);
+        if (empty($forum_api_key)) {
+          watchdog('comment_sources', "Could not retrieve forum key to display recent Disqus comments", array(), WATCHDOG_ERROR);
+        }
+        else {
+          $posts = $disqus->get_forum_posts($forum_id, array('forum_api_key' => $forum_api_key, 'limit' => $count));
+        }
+      }
+    } catch (DisqusException $d) {
+      watchdog('comment_sources', "Error trying to retrieve comments from Disqus", array(), WATCHDOG_ERROR);
+    }
+  }
+  return $posts;
 }
 
 /**
