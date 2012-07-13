@@ -26,6 +26,111 @@ function comment_sources_menu() {
 }
 
 /**
+ * Get a list of the supported comment sources.
+ * In some cases (fb_social) a module can provide multiple comment sources. If that's the case, provide a callback
+ * function to retrieve each comment source associated with that module.
+ */
+function comment_sources_sources() {
+  $base_sources = array(
+    'comment' => array(
+      'description' => t('Drupal Comments'),
+      ),
+    'disqus' => array(
+      'description' => t('Disqus Comments'),
+    ),
+    'fb_social' => array(
+      'description' => t('Facebook Comments'),
+      'children_callback' => 'comment_sources_fb_social',
+    )
+  );
+  return $base_sources;
+}
+
+/**
+ * Get a list of the currently enabled comment sources
+ */
+function comment_sources_enabled_sources() {
+  $sources = comment_sources_sources();
+  $enabled_sources = array();
+
+  // Check to ensure the comment source modules are enabled
+  foreach ($sources as $key => $value) {
+    if (module_exists($key)) {
+      if (isset($value['children_callback'])) {
+        $enabled_sources = array_merge($enabled_sources, call_user_func($value['children_callback'], $value));
+      }
+      else {
+        $enabled_sources[$key] = $value;
+      }
+    }
+  }
+  return $enabled_sources;
+}
+
+/**
+ * fb_social has a separate comment source for each preset. Retrieve the available comment presets
+ */
+function comment_sources_fb_social($source) {
+  $presets = function_exists('fb_social_get_presets_by_type') ? fb_social_get_presets_by_type('comments') : array();
+  $enabled_sources = array();
+  if (count($presets) > 0) {
+    foreach ($presets as $preset) {
+      $enabled_sources[join(":", array('fb_social', $preset->name))] = array(
+        'description' => join(":", array($source['description'], $preset->name)),
+      );
+    }
+  }
+  return $enabled_sources;
+}
+
+/**
+ * Set the comment source for a given content type, with options appropriate to that comment source
+ */
+function comment_sources_set_source($content_type, $source) {
+  $enabled_sources = comment_sources_enabled_sources();
+  $selected_sources = comment_sources_load($enabled_sources);
+
+  // Check for bogus content types
+  if (!array_key_exists($content_type, node_type_get_types())) {
+    return FALSE;
+  }
+
+  if (!empty($source)) {
+    // Check for bogus comment sources
+    if (!array_key_exists($source, $enabled_sources))
+      return FALSE;
+    $selected_sources[$content_type] = $source;
+  }
+  else {
+    unset($selected_sources[$content_type]);
+  }
+  comment_sources_save($enabled_sources, $selected_sources);
+
+  return TRUE;
+}
+
+/**
+ * Get the comment source for a given content type
+ */
+function comment_sources_get_source($content_type) {
+  $enabled_sources = comment_sources_enabled_sources();
+  $selected_sources = comment_sources_load($enabled_sources);
+  return isset($selected_sources[$content_type]) ? $selected_sources[$content_type] : '';
+}
+
+/**
+ * Get the most recent comments for a content source and content type
+ */
+function comment_sources_recent_comments($source, $content_type = 'all', $count = 10) {
+  $result = array();
+  $function_name = "_comment_sources_recent_comments_" . $source;
+  if (function_exists($function_name)) {
+    $result = call_user_func_array($function_name, array($content_type == 'all' ? '' : $content_type, $count));
+  }
+  return $result;
+}
+
+/**
  * Implements hook_form_alter().
  */
 function comment_sources_form_alter(&$form, $form_state, $form_id) {
