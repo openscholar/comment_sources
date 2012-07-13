@@ -5,7 +5,9 @@
 * `comment_sources_enabled_sources()` - Get a list of the currently enabled content sources. Takes into account whether the required modules are installed, and breaks out the individual fb_social presets, each of which can be configured independently
 * `comment_sources_set_source($content_type, $source)` - Set the comment source for a content type
 * `comment_sources_get_source($content_type)` - Get the comment source for a content type
-* `comment_sources_recent_comments($source, $content_type, $count)` - Get recent comments
+* `comment_sources_supports_recent_comments($source)` - Whether a comment source supports the 'recent comments' feature
+* `comment_sources_recent_comments($source, $count)` - Get recent comments
+* `hook_comment_sources()` - Add additional comment sources                                                     
 
 ### Administration
 
