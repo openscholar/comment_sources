@@ -10,66 +10,6 @@
  */
 function comment_sources_schema() {
   $schema = array();
-  $schema['comment_sources_comments'] = array(
-    'fields' => array(
-      'cid' => array(
-        'description' => 'Unique id',
-        'type' => 'serial',
-        'not null' => TRUE,
-      ),
-      'nid' => array(
-        'description' => 'Node on which the comment was made',
-        'type' => 'int',
-        'not null' => TRUE,
-        'default' => 0,
-      ),
-      'source' => array(
-        'description' => 'Comment source',
-        'type' => 'varchar',
-        'length' => 128,
-        'not null' => TRUE,
-        'default' => '',
-      ),
-      'subject' => array(
-        'type' => 'varchar',
-        'length' => 255,
-        'not null' => TRUE,
-        'default' => '',
-        'description' => 'The comment title.',
-      ),
-      'external_id' => array(
-        'type' => 'varchar',
-        'length' => 255,
-        'not null' => TRUE,
-        'default' => '',
-        'description' => 'The id of the comment on the external system.',
-      ),
-      'timestamp' => array(
-        'type' => 'int',
-        'not null' => TRUE,
-        'default' => 0,
-        'description' => 'The Unix timestamp for when the comment was created',
-      ),
-    ),
-    'primary key' => array('cid'),
-    'indexes' => array(
-      'nid' => array('nid'),
-    ),
-  );
   return $schema;
 }
 
-/**
- * Allows comment_sources to track recent comments made on third-party comment sources
- */
-function comment_sources_update_7001() {
-  if (!db_table_exists('comment_sources_comments')) {
-    drupal_install_schema('comment_sources');
-  }
-}
-
-function comment_sources_update_7002() {
-  if (!db_table_exists('comment_sources_comments')) {
-    drupal_install_schema('comment_sources');
-  }
-}
