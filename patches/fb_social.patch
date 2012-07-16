@@ -1,75 +1,7 @@
-diff --git a/fb_social.install b/fb_social.install
-index 9d0bf7b..377aedc 100644
---- a/fb_social.install
-+++ b/fb_social.install
-@@ -88,6 +88,63 @@ function fb_social_schema() {
-     ),
-   );
- 
-+  $schema['fb_social_comments'] = array(
-+    'fields' => array(
-+      'cid' => array(
-+        'type' => 'serial',
-+        'not null' => TRUE,
-+      ),
-+      'nid' => array(
-+        'type' => 'int',
-+        'not null' => TRUE,
-+        'default' => 0,
-+      ),
-+      'status' => array(
-+        'type' => 'int',
-+        'unsigned' => TRUE,
-+        'size' => 'tiny',
-+        'not null' => TRUE,
-+        'default' => 0,
-+      ),
-+    ),
-+    'primary key' => array('cid'),
-+    'indexes' => array(
-+      'nid' => array('nid'),
-+      'status' => array('status'),
-+    ),
-+  );
-+
-   return $schema;
-+}
-+
-+function fb_social_update_7001() {
-+  if (!db_table_exists('fb_social_comments')) {
-+    $schema['fb_social_comments'] = array(
-+      'fields' => array(
-+        'cid' => array(
-+          'type' => 'serial',
-+          'not null' => TRUE,
-+        ),
-+        'nid' => array(
-+          'type' => 'int',
-+          'not null' => TRUE,
-+          'default' => 0,
-+        ),
-+        'status' => array(
-+          'type' => 'int',
-+          'unsigned' => TRUE,
-+          'size' => 'tiny',
-+          'not null' => TRUE,
-+          'default' => 0,
-+        ),
-+      ),
-+      'primary key' => array('cid'),
-+      'indexes' => array(
-+        'nid' => array('nid'),
-+        'status' => array('status'),
-+      ),
-+    );
-+    db_create_table('fb_social_comments', $schema['fb_social_comments']);
-+  }
- 
- }
-diff --git a/fb_social.module b/fb_social.module
+diff --git fb_social.module fb_social.module
 index 8dd395a..694ea74 100644
---- a/fb_social.module
-+++ b/fb_social.module
+--- fb_social.module
++++ fb_social.module
 @@ -207,6 +207,75 @@ function fb_social_link($type, $object = NULL, $view_mode = 'full') {
    }
  }
@@ -146,10 +78,10 @@ index 8dd395a..694ea74 100644
  
  // ctools hooks / api
    
-diff --git a/plugins/fb_plugin/comments.inc b/plugins/fb_plugin/comments.inc
-index 4db67fa..88f1872 100644
---- a/plugins/fb_plugin/comments.inc
-+++ b/plugins/fb_plugin/comments.inc
+diff --git plugins/fb_plugin/comments.inc plugins/fb_plugin/comments.inc
+index 4db67fa..ee65b11 100644
+--- plugins/fb_plugin/comments.inc
++++ plugins/fb_plugin/comments.inc
 @@ -12,10 +12,15 @@ $plugin = array(
      'html tag name' => 'comments', 
      
@@ -178,20 +110,29 @@ index 4db67fa..88f1872 100644
    // dont disply plugin for unpublished nodes
    if (! ($node->status)) {
      return;
-@@ -199,6 +204,12 @@ function _fb_social_comments_nodeapi_view($preset, &$node, $view_mode = 'full')
+@@ -199,7 +204,20 @@ function _fb_social_comments_nodeapi_view($preset, &$node, $view_mode = 'full')
    if (empty($preset->settings['plugin_location']['node_view_modes'][$view_mode])) {
      return;
    }
+-  
 +
-+  // it's not supposed to be displayed for this node
-+  $status = db_query("SELECT status FROM {fb_social_comments} WHERE nid = :nid", array(':nid' => $node->nid))->fetchObject();
-+  if (isset($status->status) && !(bool)$status->status) {
++  // Existing Drupal comments are present, so don't display Facebook comments
++  if (($node->comment_count > 0) && ($node->comment != COMMENT_NODE_HIDDEN)) {
 +    return;
 +  }
-   
++
++  // it's not supposed to be displayed for this node
++  if (module_exists('comment_sources')) {
++    $status = db_query("SELECT status FROM {comment_sources_enabled_comments} WHERE nid = :nid", array(':nid' => $node->nid))->fetchObject();
++    if (isset($status->status) && !(bool)$status->status) {
++      return;
++    }
++  }
++
    $preset->fb_attrs['href'] = fb_social_url('node/' . $node->nid);
    $output = fb_social_preset_view($preset);
-@@ -319,5 +330,89 @@ function fb_social_comments_seo_comment_view($comment) {
+   $node->content['fb_social_' . $preset->name] = array(
+@@ -319,5 +337,95 @@ function fb_social_comments_seo_comment_view($comment) {
    return $comment -> message . ' - by ' . $comment -> from -> name . ' on ' . format_date(strtotime($comment -> created_time));
  }
  
@@ -211,39 +152,41 @@ index 4db67fa..88f1872 100644
 + * hook_form_alter callback for this plugin
 + */
 +function _fb_social_comments_form_alter($preset, &$form, $form_state, $form_id) {
-+  if (!empty($form['#node_edit_form'])) {
-+    $node_types = $preset->settings['node_types']['types'];
-+    $node = $form['#node'];
-+    if (array_key_exists($node->type, $node_types)) {
-+      if (!isset($form['comment_settings'])) {
-+        $form['comment_settings'] = array(
-+          '#type' => 'fieldset',
++  if (module_exists('comment_sources')) {
++    if (!empty($form['#node_edit_form'])) {
++      $node_types = $preset->settings['node_types']['types'];
++      $node = $form['#node'];
++      if (array_key_exists($node->type, $node_types)) {
++        if (!isset($form['comment_settings'])) {
++          $form['comment_settings'] = array(
++            '#type' => 'fieldset',
++            '#access' => user_access('toggle facebook comments'),
++            '#title' => t('Comment settings'),
++            '#collapsible' => TRUE,
++            '#collapsed' => TRUE,
++            '#group' => 'additional_settings',
++            '#weight' => 30,
++          );
++        }
++        else {
++          if (isset($form['comment_settings']['comment'])) {
++            $form['comment_settings']['comment']['#access'] = $form['comment_settings']['#access'];
++            $form['comment_settings']['#access'] = TRUE;
++          }
++        }
++
++        if (isset($node->nid)) {
++          $status = db_query("SELECT status FROM {comment_sources_enabled_comments} WHERE nid = :nid", array(':nid' => $node->nid))->fetchObject();
++        }
++
++        $form['comment_settings']['fb_social_status'] = array(
++          '#type' => 'checkbox',
++          '#title' => t('Facebook comments'),
++          '#description' => t('Users can post comments using Facebook.'),
++          '#default_value' => isset($status->status) ? $status->status : TRUE,
 +          '#access' => user_access('toggle facebook comments'),
-+          '#title' => t('Comment settings'),
-+          '#collapsible' => TRUE,
-+          '#collapsed' => TRUE,
-+          '#group' => 'additional_settings',
-+          '#weight' => 30,
 +        );
 +      }
-+      else {
-+        if (isset($form['comment_settings']['comment'])) {
-+          $form['comment_settings']['comment']['#access'] = $form['comment_settings']['#access'];
-+          $form['comment_settings']['#access'] = TRUE;
-+        }
-+      }
-+
-+      if (isset($node->nid)) {
-+        $status = db_query("SELECT status FROM {fb_social_comments} WHERE nid = :nid", array(':nid' => $node->nid))->fetchObject();
-+      }
-+
-+      $form['comment_settings']['fb_social_status'] = array(
-+        '#type' => 'checkbox',
-+        '#title' => t('Facebook comments'),
-+        '#description' => t('Users can post comments using Facebook.'),
-+        '#default_value' => isset($status->status) ? $status->status : TRUE,
-+        '#access' => user_access('toggle facebook comments'),
-+      );
 +    }
 +  }
 +}
@@ -252,23 +195,27 @@ index 4db67fa..88f1872 100644
 + * Implements hook_node_delete().
 + */
 +function _fb_social_comments_node_delete($preset, $node) {
-+  db_delete('fb_social_comments')->condition('nid', $node->nid)->execute();
++  if (module_exists('comment_sources')) {
++    db_delete('comment_sources_enabled_comments')->condition('nid', $node->nid)->execute();
++  }
 +}
 +
 +/**
 + * Implements hook_node_insert().
 + */
 +function _fb_social_comments_node_insert($preset, $node) {
-+  // Clear the value from the database.
-+  _fb_social_comments_node_delete($preset, $node);
++  if (module_exists('comment_sources')) {
++    // Clear the value from the database.
++    _fb_social_comments_node_delete($preset, $node);
 +
-+  // Write the value only if it's disabled (default is enabled).
-+  if (isset($node->fb_social_status) && $node->fb_social_status == FALSE) {
-+    $data = array(
-+      'nid' => $node->nid,
-+      'status' => $node->fb_social_status,
-+    );
-+    drupal_write_record('fb_social_comments', $data);
++    // Write the value only if it's disabled (default is enabled).
++    if (isset($node->fb_social_status) && $node->fb_social_status == FALSE) {
++      $data = array(
++        'nid' => $node->nid,
++        'status' => $node->fb_social_status,
++      );
++      drupal_write_record('comment_sources_enabled_comments', $data);
++    }
 +  }
 +}
 +
