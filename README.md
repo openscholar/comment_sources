@@ -15,8 +15,3 @@
 * admin/structure/types/manage/[content-type] - Configure comment source for a content type
 * node edit page - Disable comments for disqus/Drupal/fb_social comments, depending on selected comment source for that content type. (Disabling fb_social comments depends on fb_social patch)
 * comments/review - Review and approve Drupal comments, filterable by content type
-
-## Not yet implemented
-
-* Unit tests to validate that facebook comments are being displayed on node pages correctly
-* Unit tests for saving/loading fb_social presets
