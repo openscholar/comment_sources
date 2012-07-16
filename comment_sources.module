@@ -202,7 +202,7 @@ function comment_sources_form_alter(&$form, $form_state, $form_id) {
         case 'disqus':
           // Don't hide Drupal comment options if there are pre-existing comments. Note that if the comments
           // status is 'Hidden', comment_count will always be zero
-          if ($node->comment_count == 0) {
+          if (!isset($node->comment_count) || ($node->comment_count == 0)) {
             unset($form['comment_settings']['comment']);
           }
           unset($form['comment_settings']['fb_social_status']);
@@ -210,7 +210,7 @@ function comment_sources_form_alter(&$form, $form_state, $form_id) {
           break;
         case 'fb_social':
           // See comment above re: disqus
-          if ($node->comment_count == 0) {
+          if (!isset($node->comment_count) || ($node->comment_count == 0)) {
             unset($form['comment_settings']['comment']);
           }
           unset($form['comment_settings']['disqus_status']);
