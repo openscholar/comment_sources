@@ -10,15 +10,23 @@ class CommentSourcesAPITestCase extends DrupalWebTestCase {
   protected $privileged_user;
 
   public function setUp($modules) {
-    $this->privileged_user = $this->drupalCreateUser(array('administer content types', 'edit own page content', 'administer comments'));
-    if (is_array($modules)) {
-      $modules[] = 'comment_sources';
+    if ($this->test_environment_configured()) {
+      $this->privileged_user = $this->drupalCreateUser(array('administer content types', 'edit own page content', 'administer comments'));
+      if (is_array($modules)) {
+        $modules[] = 'comment_sources';
+      }
+      else {
+        $modules = 'comment_sources';
+      }
+      module_load_include("php", "comment_sources", "comment_sources.api");
+      parent::setUp($modules);
+    } else {
+      parent::setUp();
     }
-    else {
-      $modules = 'comment_sources';
-    }
-    module_load_include("php", "comment_sources", "comment_sources.api");
-    parent::setUp($modules);
+  }
+
+  public function test_environment_configured() {
+    return module_exists('disqus') && module_exists('fb_social');
   }
 
   public function create_page_node() {
@@ -29,17 +37,6 @@ class CommentSourcesAPITestCase extends DrupalWebTestCase {
     $this->drupalPost("node/add/page", $settings, t("Save"));
   }
 
-  protected function setup_fb_social_preset() {
-    $data = array(
-      'name' => 'Comments',
-      'description' => 'Comments',
-      'plugin_type' => 'comments',
-      'settings' => 'a:5:{s:10:"node_types";a:1:{s:5:"types";a:1:{s:4:"page";s:4:"page";}}s:15:"plugin_location";a:1:{s:15:"node_view_modes";a:5:{s:4:"full";s:4:"full";s:6:"teaser";s:6:"teaser";s:3:"rss";i:0;s:12:"search_index";i:0;s:13:"search_result";i:0;}}s:21:"plugin_comments_count";a:2:{s:5:"count";i:1;s:5:"cache";s:2:"30";}s:19:"plugin_comments_seo";a:3:{s:3:"seo";i:0;s:11:"nr_comments";s:3:"100";s:12:"cache_length";s:3:"720";}s:5:"block";i:0;}',
-      'fb_attrs' => 'a:4:{s:8:"numposts";s:2:"10";s:5:"width";s:3:"550";s:11:"colorscheme";s:5:"light";s:8:"migrated";i:0;}',
-    );
-    drupal_write_record('fb_social_preset', $data);
-    ctools_export_load_object_reset("fb_social_preset");
-  }
 }
 
 class CommentSourcesNoModulesTestCase extends CommentSourcesAPITestCase {
@@ -57,9 +54,11 @@ class CommentSourcesNoModulesTestCase extends CommentSourcesAPITestCase {
   }
 
   public function testCommentSourcesGetSources() {
-    $sources = comment_sources_enabled_sources();
-    $this->assertEqual(1, count($sources), $message = "With only core commenting modules enabled, only one sources should be available");
-    $this->assert(array_key_exists('comment', $sources));
+    if ($this->test_environment_configured()) {
+      $sources = comment_sources_enabled_sources();
+      $this->assertEqual(1, count($sources), $message = "With only core commenting modules enabled, only one sources should be available");
+      $this->assert(array_key_exists('comment', $sources));
+    }
   }
 }
 
@@ -78,14 +77,16 @@ class CommentSourcesDisqusEnabledTestCase extends CommentSourcesAPITestCase {
   }
 
   public function testCommentSourcesGetSources() {
-    $sources = comment_sources_enabled_sources();
-    $this->assertEqual(2, count($sources), $message = "With only Disqus commenting module enabled, two sources should be available");
-    $this->assert(array_key_exists('comment', $sources));
-    $this->assert(array_key_exists('disqus', $sources));
+    if ($this->test_environment_configured()) {
+      $sources = comment_sources_enabled_sources();
+      $this->assertEqual(2, count($sources), $message = "With only Disqus commenting module enabled, two sources should be available");
+      $this->assert(array_key_exists('comment', $sources));
+      $this->assert(array_key_exists('disqus', $sources));
+    }
   }
 }
 
-class CommentSourcesFacebookEnabledTestCase extends CommentSourcesAPITestCase {
+class CommentSourcesFacebookEnabledTestCase extends DrupalWebTestCase {
 
   public static function getInfo() {
     return array(
@@ -96,18 +97,39 @@ class CommentSourcesFacebookEnabledTestCase extends CommentSourcesAPITestCase {
   }
 
   public function setUp() {
-    parent::setUp(array('disqus', 'fb_social'));
-    $this->setup_fb_social_preset();
+    if (module_exists('disqus') && module_exists('fb_social')) {
+      parent::setUp(array('disqus', 'fb_social'));
+      module_load_include("php", "comment_sources", "comment_sources.api");
+      $this->setup_fb_social_preset();
+    } else {
+      parent::setUp();
+    }
   }
 
   public function testCommentSourcesGetSources() {
-
-    $sources = comment_sources_enabled_sources();debug($sources);
-    $this->assertEqual(3, count($sources));
-    $this->assert(array_key_exists('comment', $sources));
-    $this->assert(array_key_exists('disqus', $sources));
-    $this->assert(array_key_exists('fb_social:Comments', $sources));
+    if (module_exists('disqus') && module_exists('fb_social')) {
+      $sources = comment_sources_enabled_sources();
+      $this->assertEqual(3, count($sources));
+      $this->assert(array_key_exists('comment', $sources));
+      $this->assert(array_key_exists('disqus', $sources));
+      $this->assert(array_key_exists('fb_social:Comments', $sources));
+    }
   }
+
+  protected function setup_fb_social_preset() {
+    if (module_exists("fb_social")) {
+      $data = array(
+        'name' => 'Comments',
+        'description' => 'Comments',
+        'plugin_type' => 'comments',
+        'settings' => 'a:5:{s:10:"node_types";a:1:{s:5:"types";a:1:{s:4:"page";s:4:"page";}}s:15:"plugin_location";a:1:{s:15:"node_view_modes";a:5:{s:4:"full";s:4:"full";s:6:"teaser";s:6:"teaser";s:3:"rss";i:0;s:12:"search_index";i:0;s:13:"search_result";i:0;}}s:21:"plugin_comments_count";a:2:{s:5:"count";i:1;s:5:"cache";s:2:"30";}s:19:"plugin_comments_seo";a:3:{s:3:"seo";i:0;s:11:"nr_comments";s:3:"100";s:12:"cache_length";s:3:"720";}s:5:"block";i:0;}',
+        'fb_attrs' => 'a:4:{s:8:"numposts";s:2:"10";s:5:"width";s:3:"550";s:11:"colorscheme";s:5:"light";s:8:"migrated";i:0;}',
+      );
+      drupal_write_record('fb_social_preset', $data);
+      ctools_export_load_object_reset("fb_social_preset");
+    }
+  }
+
 }
 
 class CommentSourcesSetSourceTestCase extends CommentSourcesAPITestCase {
@@ -125,42 +147,44 @@ class CommentSourcesSetSourceTestCase extends CommentSourcesAPITestCase {
   }
 
   public function testCommentSourceInvalidContentType() {
-    $result = comment_sources_set_source('bogus', 'disqus');
-    $this->assertFalse($result, $message = "Should fail due to bad content type");
+    if ($this->test_environment_configured()) {
+      $result = comment_sources_set_source('bogus', 'disqus');
+      $this->assertFalse($result, $message = "Should fail due to bad content type");
+    }
   }
 
   public function testCommentSourceInvalidSource() {
-    $result = comment_sources_set_source('article', 'bogus');
-    $this->assertFalse($result, $message = "Should fail due to bad comment source");
+    if ($this->test_environment_configured()) {
+      $result = comment_sources_set_source('article', 'bogus');
+      $this->assertFalse($result, $message = "Should fail due to bad comment source");
+    }
   }
 
   public function testCommentSourceSaveDisqusComment() {
-    $result = comment_sources_set_source('article', 'disqus');
-    $this->assertTrue($result);
-    $sources = comment_sources_load(comment_sources_enabled_sources());
-    $this->assertEqual('disqus', $sources['article']);
+    if ($this->test_environment_configured()) {
+      $result = comment_sources_set_source('article', 'disqus');
+      $this->assertTrue($result);
+      $sources = comment_sources_load(comment_sources_enabled_sources());
+      $this->assertEqual('disqus', $sources['article']);
+    }
   }
 
   public function testCommentSourceSaveDrupalComment() {
-    $result = comment_sources_set_source('article', 'comment');
-    $this->assertTrue($result);
-    $sources = comment_sources_load(comment_sources_enabled_sources());
-    $this->assertEqual('comment', $sources['article']);
+    if ($this->test_environment_configured()) {
+      $result = comment_sources_set_source('article', 'comment');
+      $this->assertTrue($result);
+      $sources = comment_sources_load(comment_sources_enabled_sources());
+      $this->assertEqual('comment', $sources['article']);
+    }
   }
 
-//  public function testCommentSourceSaveFacebookComment() {
-//    $this->setup_fb_social_preset();
-//    $result = comment_sources_set_source('article', 'fb_social:Comments');
-//    $this->assertTrue($result);
-//    $sources = comment_sources_load(comment_sources_enabled_sources());
-//    $this->assertEqual('fb_social:Comments', $sources['article']);
-//  }
-
   public function testCommentSourceSaveNoComment() {
-    $result = comment_sources_set_source('article', '');
-    $this->assertTrue($result);
-    $sources = comment_sources_load(comment_sources_enabled_sources());
-    $this->assertEqual('', $sources['article']);
+    if ($this->test_environment_configured()) {
+      $result = comment_sources_set_source('article', '');
+      $this->assertTrue($result);
+      $sources = comment_sources_load(comment_sources_enabled_sources());
+      $this->assertEqual('', $sources['article']);
+    }
   }
 
 }
@@ -177,16 +201,20 @@ class CommentSourcesNodeTypeFormEditTestCase extends CommentSourcesAPITestCase {
 
   public function setUp() {
     parent::setUp(array('disqus'));
-    $this->privileged_user = $this->drupalCreateUser(array('view disqus comments', 'administer content types', 'edit own page content', 'administer comments', 'create page content'));
-    $this->drupalLogin($this->privileged_user);
+    if ($this->test_environment_configured()) {
+      $this->privileged_user = $this->drupalCreateUser(array('view disqus comments', 'administer content types', 'edit own page content', 'administer comments', 'create page content'));
+      $this->drupalLogin($this->privileged_user);
+    }
   }
 
   public function testCommentSourceEditNodeType() {
-    $this->drupalGet("admin/structure/types/manage/page");
-    $this->assertResponse(200);
-    $this->assertFieldByName('comment_source', 'comment');
-    $this->drupalPost("admin/structure/types/manage/page", array('comment_source' => 'disqus'), t('Save content type'));
-    $this->assertEqual('disqus', comment_sources_get_source('page'));
+    if ($this->test_environment_configured()) {
+      $this->drupalGet("admin/structure/types/manage/page");
+      $this->assertResponse(200);
+      $this->assertFieldByName('comment_source', 'comment');
+      $this->drupalPost("admin/structure/types/manage/page", array('comment_source' => 'disqus'), t('Save content type'));
+      $this->assertEqual('disqus', comment_sources_get_source('page'));
+    }
   }
 }
 
@@ -202,39 +230,45 @@ class CommentSourcesNodeFormEditTestCase extends CommentSourcesAPITestCase {
 
   public function setUp() {
     parent::setUp(array('disqus'));
-    $this->privileged_user = $this->drupalCreateUser(array('view disqus comments', 'toggle disqus comments', 'administer content types', 'edit own page content', 'administer comments', 'create page content'));
-    $this->drupalLogin($this->privileged_user);
+    if ($this->test_environment_configured()) {
+      $this->privileged_user = $this->drupalCreateUser(array('view disqus comments', 'toggle disqus comments', 'administer content types', 'edit own page content', 'administer comments', 'create page content'));
+      $this->drupalLogin($this->privileged_user);
+    }
   }
 
   public function testCommentSourceDisableDrupalComments() {
-    comment_sources_set_source('page', 'comment');
-    $this->create_page_node();
-    $this->drupalGet("node/1/edit");
-    $this->assertFieldByName('comment');
-    $this->assertNoFieldByName('disqus_status');
-    $this->drupalPost('node/1/edit', array(
-          'title' => $this->randomName(32),
-          'body[und][0][value]' => $this->randomName(64),
-          'comment' => 1,
-        ), t("Save"));
-    $this->drupalGet("node/1");
-    $this->assertNoFieldByName('comment_body[und][0][value]');
-    $this->assertNoRaw('disqus_thread');
+    if ($this->test_environment_configured()) {
+      comment_sources_set_source('page', 'comment');
+      $this->create_page_node();
+      $this->drupalGet("node/1/edit");
+      $this->assertFieldByName('comment');
+      $this->assertNoFieldByName('disqus_status');
+      $this->drupalPost('node/1/edit', array(
+            'title' => $this->randomName(32),
+            'body[und][0][value]' => $this->randomName(64),
+            'comment' => 1,
+          ), t("Save"));
+      $this->drupalGet("node/1");
+      $this->assertNoFieldByName('comment_body[und][0][value]');
+      $this->assertNoRaw('disqus_thread');
+    }
   }
 
   public function testCommentSourceDisableDisqusComments() {
-    comment_sources_set_source('page', 'disqus');
-    $this->create_page_node();
-    $this->drupalGet("node/1/edit");
-    $this->assertFieldByName('disqus_status');
-    $this->drupalPost('node/1/edit', array(
-          'title' => $this->randomName(32),
-          'body[und][0][value]' => $this->randomName(64),
-          'disqus_status' => FALSE,
-        ), t("Save"));
-    $this->drupalGet("node/1");
-    $this->assertNoFieldByName('comment_body[und][0][value]');
-    $this->assertNoRaw('disqus_thread');
+    if ($this->test_environment_configured()) {
+      comment_sources_set_source('page', 'disqus');
+      $this->create_page_node();
+      $this->drupalGet("node/1/edit");
+      $this->assertFieldByName('disqus_status');
+      $this->drupalPost('node/1/edit', array(
+            'title' => $this->randomName(32),
+            'body[und][0][value]' => $this->randomName(64),
+            'disqus_status' => FALSE,
+          ), t("Save"));
+      $this->drupalGet("node/1");
+      $this->assertNoFieldByName('comment_body[und][0][value]');
+      $this->assertNoRaw('disqus_thread');
+    }
   }
 }
 
@@ -252,25 +286,31 @@ class CommentSourcesDisplayCommentsTestCase extends CommentSourcesAPITestCase {
     parent::setUp(array('disqus'));
     variable_set('disqus_domain', 'localhost');
 
-    $this->web_user = $this->drupalCreateUser(array('access comments', 'post comments', 'create article content', 'edit own comments', 'view disqus comments'));
-    $this->privileged_user = $this->drupalCreateUser(array('view disqus comments', 'toggle disqus comments', 'administer content types', 'edit own page content', 'administer comments', 'create page content'));
-    $this->drupalLogin($this->privileged_user);
+    if ($this->test_environment_configured()) {
+      $this->web_user = $this->drupalCreateUser(array('access comments', 'post comments', 'create article content', 'edit own comments', 'view disqus comments'));
+      $this->privileged_user = $this->drupalCreateUser(array('view disqus comments', 'toggle disqus comments', 'administer content types', 'edit own page content', 'administer comments', 'create page content'));
+      $this->drupalLogin($this->privileged_user);
+    }
   }
 
   public function testCommentSourceDrupalComments() {
-    comment_sources_set_source('page', 'comment');
-    $this->create_page_node();
-    $this->drupalGet("node/1");
-    $this->assertFieldByName('comment_body[und][0][value]');
-    $this->assertNoRaw('disqus_thread');
+    if ($this->test_environment_configured()) {
+      comment_sources_set_source('page', 'comment');
+      $this->create_page_node();
+      $this->drupalGet("node/1");
+      $this->assertFieldByName('comment_body[und][0][value]');
+      $this->assertNoRaw('disqus_thread');
+    }
   }
 
   public function testCommentSourceDisqusComments() {
-    comment_sources_set_source('page', 'disqus');
-    $this->create_page_node();
-    $this->drupalGet("node/1");
-    $this->assertNoFieldByName('comment_body[und][0][value]');
-    $this->assertRaw('disqus_thread');
+    if ($this->test_environment_configured()) {
+      comment_sources_set_source('page', 'disqus');
+      $this->create_page_node();
+      $this->drupalGet("node/1");
+      $this->assertNoFieldByName('comment_body[und][0][value]');
+      $this->assertRaw('disqus_thread');
+    }
   }
 
 }
