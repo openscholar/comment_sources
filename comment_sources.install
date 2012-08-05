@@ -10,7 +10,7 @@
  */
 function comment_sources_schema() {
   $schema = array();
-  $schema['comment_sources_enabled_comments'] = array(
+  $schema['comment_sources_comments'] = array(
     'fields' => array(
       'cid' => array(
         'type' => 'serial',
@@ -21,7 +21,20 @@ function comment_sources_schema() {
         'not null' => TRUE,
         'default' => 0,
       ),
+      'source' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
       'status' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'has_comments' => array(
         'type' => 'int',
         'unsigned' => TRUE,
         'size' => 'tiny',
