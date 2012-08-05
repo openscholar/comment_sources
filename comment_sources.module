@@ -47,7 +47,7 @@ function _comment_sources_sources() {
     )
   );
   $other_sources = module_invoke_all("comment_sources");
-  return array_merge_recursive($base_sources,$other_sources);
+  return array_merge_recursive($base_sources, $other_sources);
 }
 
 /**
@@ -126,10 +126,10 @@ function comment_sources_get_source($content_type) {
  * Record the enabled/disabled comments status for for a node for a comment source
  */
 function comments_sources_set_node_status($node, $source, $status) {
-  $record = db_select('comment_sources_comments','c')
-    ->condition('c.nid',$node->nid)
-    ->condition('c.source',$source)
-    ->fields('c',array('nid'))
+  $record = db_select('comment_sources_comments', 'c')
+    ->condition('c.nid', $node->nid)
+    ->condition('c.source', $source)
+    ->fields('c', array('nid'))
     ->execute();
   $data = array(
     'nid' => $node->nid,
@@ -137,7 +137,7 @@ function comments_sources_set_node_status($node, $source, $status) {
     'status' => $status,
   );
   if ($record->rowCount() > 0) {
-    drupal_write_record('comment_sources_comments', $data, array('nid','source'));
+    drupal_write_record('comment_sources_comments', $data, array('nid', 'source'));
   }
   else {
     drupal_write_record('comment_sources_comments', $data);
@@ -151,9 +151,9 @@ function comments_sources_set_node_status($node, $source, $status) {
 function comment_sources_should_display_comments($node, $source) {
   $result = TRUE;
   if ($node && $node->nid) {
-    $record = db_select('comment_sources_comments','c')
-      ->condition('c.nid',$node->nid)
-      ->fields('c',array('source','status','has_comments'))
+    $record = db_select('comment_sources_comments', 'c')
+      ->condition('c.nid', $node->nid)
+      ->fields('c', array('source', 'status', 'has_comments'))
       ->execute();
     foreach ($record as $row) {
       if ($row->source == $source) {
@@ -183,10 +183,10 @@ function comment_sources_should_display_comments($node, $source) {
 function comment_sources_has_comments($node, $source) {
   $result = FALSE;
   if ($node && $node->nid) {
-    $record = db_select('comment_sources_comments','c')
-      ->condition('c.nid',$node->nid)
-      ->condition('c.source',$source)
-      ->fields('c',array('has_comments'))
+    $record = db_select('comment_sources_comments', 'c')
+      ->condition('c.nid', $node->nid)
+      ->condition('c.source', $source)
+      ->fields('c', array('has_comments'))
       ->execute();
     if ($record->rowCount() == 1) {
       $result = ($record->fetchField(0) == 1);
@@ -535,10 +535,10 @@ function comment_sources_record_comment_ajax() {
     'source' => $_GET['source'],
   );
   if (!empty($query_data['source']) && !empty($query_data['nid'])) {
-    $record = db_select('comment_sources_comments','c')
+    $record = db_select('comment_sources_comments', 'c')
       ->condition('c.nid', $query_data['nid'])
       ->condition('c.source', $query_data['source'])
-      ->fields('c',array('nid'))
+      ->fields('c', array('nid'))
       ->execute();
     $data = array(
       'nid' => $query_data['nid'],

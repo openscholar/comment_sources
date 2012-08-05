@@ -20,7 +20,8 @@ class CommentSourcesAPITestCase extends DrupalWebTestCase {
       }
       module_load_include("php", "comment_sources", "comment_sources.api");
       parent::setUp($modules);
-    } else {
+    }
+    else {
       parent::setUp();
     }
   }
@@ -101,7 +102,8 @@ class CommentSourcesFacebookEnabledTestCase extends DrupalWebTestCase {
       parent::setUp(array('disqus', 'fb_social'));
       module_load_include("php", "comment_sources", "comment_sources.api");
       $this->setup_fb_social_preset();
-    } else {
+    }
+    else {
       parent::setUp();
     }
   }
