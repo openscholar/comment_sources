@@ -13,10 +13,10 @@ index 74d971d..deab80d 100644
  
          // Make the AJAX call to get the Disqus comments.
 diff --git disqus.module disqus.module
-index 93fb84a..7e9af5c 100644
+index 93fb84a..2e1cde5 100644
 --- disqus.module
 +++ disqus.module
-@@ -192,13 +192,18 @@ function disqus_node_load($nodes, $types) {
+@@ -192,7 +192,7 @@ function disqus_node_load($nodes, $types) {
    if (!empty($domain)) {
      // Load Disqus into the nodes.
      foreach ($nodes as &$node) {
@@ -25,20 +25,7 @@ index 93fb84a..7e9af5c 100644
          // Save the data to the node object.
          $node->disqus = array('domain' => $domain);
  
-         // Apply the Disqus status to the node.
--        $status = db_query("SELECT status FROM {disqus} WHERE nid = :nid", array(':nid' => $node->nid))->fetchObject();
--        $node->disqus['status'] = isset($status->status) ? (bool)$status->status : TRUE;
-+        if (module_exists('comment_sources')) {
-+          $node->disqus['status'] = comment_sources_should_display_comments($node,'disqus');
-+        }
-+        else {
-+          $status = db_query("SELECT status FROM {disqus} WHERE nid = :nid", array(':nid' => $node->nid))->fetchObject();
-+          $node->disqus['status'] = isset($status->status) ? (bool)$status->status : TRUE;
-+        }
- 
-         // Build the absolute URL without the alias for the disqus_url flag.
-         $node->disqus['url'] = url("node/$node->nid", array(
-@@ -227,7 +232,8 @@ function disqus_node_load($nodes, $types) {
+@@ -227,7 +227,8 @@ function disqus_node_load($nodes, $types) {
   * Implements hook_node_view().
   */
  function disqus_node_view($node, $view_mode) {
@@ -48,17 +35,3 @@ index 93fb84a..7e9af5c 100644
      switch ($view_mode) {
        case 'full':
        	// Inject Disqus into the node object.
-@@ -295,6 +301,13 @@ function disqus_node_insert($node) {
-     );
-     drupal_write_record('disqus', $data);
-   }
-+
-+  // Update node status for comment_sources module. Updated regardless of of whether set or not
-+  if (module_exists('comment_sources')) {
-+    if (isset($node->disqus_status)) {
-+      comments_sources_set_node_status($node,'disqus',($node->disqus_status != FALSE));
-+    }
-+  }
- }
- 
- /**
