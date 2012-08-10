@@ -261,6 +261,7 @@ function comment_sources_form_alter(&$form, $form_state, $form_id) {
   }
   // Node edit page
   elseif (!empty($form['#node_edit_form'])) {
+
     // Hide settings for inappropriate comment types
     $node = $form['#node'];
     if (isset($node->type)) {
@@ -287,7 +288,36 @@ function comment_sources_form_alter(&$form, $form_state, $form_id) {
             unset($form['comment_settings']['comment']);
           }
           unset($form['comment_settings']['disqus_status']);
-          $form['comment_settings']['#access'] = user_access('toggle facebook comments');
+
+          // Add node-specific Facebook comment settings, since they the aren't done in the fb_social module
+          if (!isset($form['comment_settings'])) {
+            $form['comment_settings'] = array(
+              '#type' => 'fieldset',
+              '#title' => t('Comment settings'),
+              '#collapsible' => TRUE,
+              '#collapsed' => TRUE,
+              '#group' => 'additional_settings',
+              '#weight' => 30,
+            );
+          }
+          else {
+            if (isset($form['comment_settings']['comment'])) {
+              $form['comment_settings']['comment']['#access'] = $form['comment_settings']['#access'];
+              $form['comment_settings']['#access'] = TRUE;
+            }
+          }
+
+          if (isset($node->nid)) {
+            $status = db_query("SELECT status FROM {comment_sources_comments} WHERE nid = :nid", array(':nid' => $node->nid))->fetchObject();
+          }
+
+          $form['comment_settings']['fb_social_status'] = array(
+            '#type' => 'checkbox',
+            '#title' => t('Facebook comments'),
+            '#description' => t('Users can post comments using Facebook.'),
+            '#default_value' => isset($status->status) ? $status->status : TRUE,
+          );
+
           break;
       }
       /* Override the standard comment javascript with our improved version that also handles comment sources */
@@ -565,6 +595,37 @@ function comment_sources_fb_social_event_subscribe() {
     '});'
   );
 }
+
+/**
+ * Implements hook_node_delete().
+ */
+function comment_sources_node_delete($node) {
+  if (module_exists('comment_sources')) {
+    db_delete('comment_sources_comments')->condition('nid', $node->nid)->execute();
+  }
+}
+
+/**
+ * Implements hook_node_insert().
+ *
+ * Need to record status for nodes with Facebook comments, to indicate whether they should
+ * be displayed or not. Don't need to do this for Disqus, since that's implemented as a patch
+ * to the Disqus module
+ */
+function comment_sources_node_insert($node) {
+  if (isset($node->fb_social_status)) {
+    comments_sources_set_node_status($node,'fb_social',$node->fb_social_status);
+  }
+}
+
+/**
+ * Implements hook_node_update().
+ */
+function comment_sources_node_update($node) {
+  comment_sources_node_insert($node);
+}
+
+
 
 /**
  * Implements hook_views_api().
