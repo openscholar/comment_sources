@@ -2,6 +2,8 @@
 
 module_load_include('api.inc', 'comment_sources');
 
+
+
 /**
  * Implements hook_menu().
  */
@@ -608,13 +610,17 @@ function comment_sources_node_delete($node) {
 /**
  * Implements hook_node_insert().
  *
- * Need to record status for nodes with Facebook comments, to indicate whether they should
- * be displayed or not. Don't need to do this for Disqus, since that's implemented as a patch
- * to the Disqus module
+ * Need to record status for nodes with Disqus / Facebook comments, to indicate whether they should
+ * be displayed or not.
  */
 function comment_sources_node_insert($node) {
-  if (isset($node->fb_social_status)) {
-    comments_sources_set_node_status($node,'fb_social',$node->fb_social_status);
+  if (isset($node->fb_social_status) && (comment_sources_get_source($node->type) == 'fb_social')) {
+    comments_sources_set_node_status($node, 'fb_social', $node->fb_social_status);
+  }
+  else {
+    if (isset($node->disqus_status) && (comment_sources_get_source($node->type) == 'disqus')) {
+      comments_sources_set_node_status($node, 'disqus', ($node->disqus_status != FALSE));
+    }
   }
 }
 
@@ -625,7 +631,17 @@ function comment_sources_node_update($node) {
   comment_sources_node_insert($node);
 }
 
-
+/**
+ * Implements hook_node_load().
+ * For Disqus nodes, checks to see if the comments should be displayed
+ */
+function comment_sources_node_load($nodes, $types) {
+  foreach ($nodes as &$node) {
+    if (comment_sources_has_comments($node,'disqus') || (comment_sources_get_source($node->type) == 'disqus')) {
+      $node->disqus['status'] = comment_sources_should_display_comments($node,'disqus');
+    }
+  }
+}
 
 /**
  * Implements hook_views_api().
