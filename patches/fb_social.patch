@@ -1,0 +1,47 @@
+diff --git plugins/fb_plugin/comments.inc plugins/fb_plugin/comments.inc
+index 4db67fa..1d4645b 100644
+--- plugins/fb_plugin/comments.inc
++++ plugins/fb_plugin/comments.inc
+@@ -184,22 +184,36 @@ function _fb_social_comments_preprocess_fb_social_plugin(&$variables) {
+  * nodeapi_view callback for this plugin
+  */
+ function _fb_social_comments_nodeapi_view($preset, &$node, $view_mode = 'full') {
+-  
++
+   // dont disply plugin for unpublished nodes
+   if (! ($node->status)) {
+     return;
+   }
+   
+-  // this plugin is not enabled on this content type
+-  if (! fb_social_preset_node_types($preset, $node->type)) {
+-    return;
++  // this plugin is not enabled on this content type, and there are no existing comment
++  if (!module_exists('comment_sources') || !comment_sources_has_comments($node,'fb_social')) {
++    if (! fb_social_preset_node_types($preset, $node->type)) {
++      return;
++    }
+   }
+-  
++
+   // it's not supposed to be displayed in this view mode ?
+   if (empty($preset->settings['plugin_location']['node_view_modes'][$view_mode])) {
+     return;
+   }
+-  
++
++  // Existing Drupal comments are present, so don't display Facebook comments
++  if (($node->comment_count > 0) && ($node->comment != COMMENT_NODE_HIDDEN)) {
++    return;
++  }
++
++  // it's not supposed to be displayed for this node
++  if (module_exists('comment_sources')) {
++    if (!comment_sources_should_display_comments($node,'fb_social')) {
++      return;
++    }
++  }
++
+   $preset->fb_attrs['href'] = fb_social_url('node/' . $node->nid);
+   $output = fb_social_preset_view($preset);
+   $node->content['fb_social_' . $preset->name] = array(

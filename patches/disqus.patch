@@ -1,0 +1,37 @@
+diff --git disqus.js disqus.js
+index 74d971d..deab80d 100644
+--- disqus.js
++++ disqus.js
+@@ -46,6 +46,9 @@ Drupal.behaviors.disqus = {
+           if (settings.disqus.sso || false) {
+             this.sso = settings.disqus.sso;
+           }
++          if (typeof disqus_track_comments == 'function') {
++              this.callbacks.onNewComment = [function(params) { disqus_track_comments(params); }];
++          }
+         };
+ 
+         // Make the AJAX call to get the Disqus comments.
+diff --git disqus.module disqus.module
+index 93fb84a..2e1cde5 100644
+--- disqus.module
++++ disqus.module
+@@ -192,7 +192,7 @@ function disqus_node_load($nodes, $types) {
+   if (!empty($domain)) {
+     // Load Disqus into the nodes.
+     foreach ($nodes as &$node) {
+-      if (!empty($disqustypes[$node->type])) {
++      if (!empty($disqustypes[$node->type]) || (module_exists('comment_sources') && comment_sources_has_comments($node,'disqus'))) {
+         // Save the data to the node object.
+         $node->disqus = array('domain' => $domain);
+ 
+@@ -227,7 +227,8 @@ function disqus_node_load($nodes, $types) {
+  * Implements hook_node_view().
+  */
+ function disqus_node_view($node, $view_mode) {
+-  if (isset($node->disqus) && user_access('view disqus comments') && $node->disqus['status'] == 1) {
++  if (isset($node->disqus) && user_access('view disqus comments') && $node->disqus['status'] == 1
++      && (($node->comment_count == 0) || $node->comment = COMMENT_NODE_HIDDEN)) {
+     switch ($view_mode) {
+       case 'full':
+       	// Inject Disqus into the node object.

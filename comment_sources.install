@@ -1,0 +1,58 @@
+<?php
+
+/**
+ * @file
+ * Provides any required installation or upgrade path requirements.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function comment_sources_schema() {
+  $schema = array();
+  $schema['comment_sources_comments'] = array(
+    'fields' => array(
+      'cid' => array(
+        'type' => 'serial',
+        'not null' => TRUE,
+      ),
+      'nid' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'source' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'status' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'has_comments' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('cid'),
+    'indexes' => array(
+      'nid' => array('nid'),
+      'status' => array('status'),
+    ),
+  );
+  return $schema;
+}
+
+function comment_sources_install() {
+  $result = db_query("SELECT weight FROM {system} WHERE name = 'disqus'")->fetchObject();
+  $weight = (isset($result->weight)) ? $result->weight : 0;
+  db_query("UPDATE {system} SET weight = :weight WHERE name = 'comment_sources'", array(':weight' => $weight + 1));
+}
