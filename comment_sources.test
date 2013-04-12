@@ -5,6 +5,17 @@
  * Test cases for comment_sources
  */
 
+
+/**
+ * Includes non-hook functions and helper functions.
+ */
+ctools_include('api', 'comment_sources');
+
+/**
+ * Includes comment_sources hook implementations for Drupal, Facebook, Disqus.
+ */
+ctools_include('sources', 'comment_sources');
+
 class CommentSourcesAPITestCase extends DrupalWebTestCase {
   protected $web_user;
   protected $privileged_user;
@@ -150,41 +161,41 @@ class CommentSourcesSetSourceTestCase extends CommentSourcesAPITestCase {
 
   public function testCommentSourceInvalidContentType() {
     if ($this->test_environment_configured()) {
-      $result = comment_sources_set_source('bogus', 'disqus');
+      $result = comment_sources_set_type_source('disqus', 'bogus');
       $this->assertFalse($result, $message = "Should fail due to bad content type");
     }
   }
 
   public function testCommentSourceInvalidSource() {
     if ($this->test_environment_configured()) {
-      $result = comment_sources_set_source('article', 'bogus');
+      $result = comment_sources_set_type_source('bogus', 'article');
       $this->assertFalse($result, $message = "Should fail due to bad comment source");
     }
   }
 
   public function testCommentSourceSaveDisqusComment() {
     if ($this->test_environment_configured()) {
-      $result = comment_sources_set_source('article', 'disqus');
+      $result = comment_sources_set_type_source('disqus', 'article');
       $this->assertTrue($result);
-      $sources = comment_sources_load(comment_sources_enabled_sources());
+      $sources = comment_sources_type_settings();
       $this->assertEqual('disqus', $sources['article']);
     }
   }
 
   public function testCommentSourceSaveDrupalComment() {
     if ($this->test_environment_configured()) {
-      $result = comment_sources_set_source('article', 'comment');
+      $result = comment_sources_set_type_source('comment', 'article');
       $this->assertTrue($result);
-      $sources = comment_sources_load(comment_sources_enabled_sources());
+      $sources = comment_sources_type_settings();
       $this->assertEqual('comment', $sources['article']);
     }
   }
 
   public function testCommentSourceSaveNoComment() {
     if ($this->test_environment_configured()) {
-      $result = comment_sources_set_source('article', '');
+      $result = comment_sources_set_type_source('', 'article');
       $this->assertTrue($result);
-      $sources = comment_sources_load(comment_sources_enabled_sources());
+      $sources = comment_sources_type_settings();
       $this->assertEqual('', $sources['article']);
     }
   }
@@ -240,7 +251,7 @@ class CommentSourcesNodeFormEditTestCase extends CommentSourcesAPITestCase {
 
   public function testCommentSourceDisableDrupalComments() {
     if ($this->test_environment_configured()) {
-      comment_sources_set_source('page', 'comment');
+      comment_sources_set_type_source('comment', 'page');
       $this->create_page_node();
       $this->drupalGet("node/1/edit");
       $this->assertFieldByName('comment');
@@ -258,7 +269,7 @@ class CommentSourcesNodeFormEditTestCase extends CommentSourcesAPITestCase {
 
   public function testCommentSourceDisableDisqusComments() {
     if ($this->test_environment_configured()) {
-      comment_sources_set_source('page', 'disqus');
+      comment_sources_set_type_source('disqus', 'page');
       $this->create_page_node();
       $this->drupalGet("node/1/edit");
       $this->assertFieldByName('disqus_status');
@@ -297,7 +308,7 @@ class CommentSourcesDisplayCommentsTestCase extends CommentSourcesAPITestCase {
 
   public function testCommentSourceDrupalComments() {
     if ($this->test_environment_configured()) {
-      comment_sources_set_source('page', 'comment');
+      comment_sources_set_type_source('comment', 'page');
       $this->create_page_node();
       $this->drupalGet("node/1");
       $this->assertFieldByName('comment_body[und][0][value]');
@@ -307,7 +318,7 @@ class CommentSourcesDisplayCommentsTestCase extends CommentSourcesAPITestCase {
 
   public function testCommentSourceDisqusComments() {
     if ($this->test_environment_configured()) {
-      comment_sources_set_source('page', 'disqus');
+      comment_sources_set_type_source('disqus', 'page');
       $this->create_page_node();
       $this->drupalGet("node/1");
       $this->assertNoFieldByName('comment_body[und][0][value]');

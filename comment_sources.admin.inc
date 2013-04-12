@@ -16,8 +16,8 @@ function comment_sources_admin_settings_form() {
   $node_types = node_type_get_types();
 
   $sources = comment_sources_enabled_sources();
-  $options = array_merge(comment_sources_node_options($sources), array('' => t('No comments')));
-  $default_values = comment_sources_load($sources);
+  $options = array_merge(_comment_sources_form_options($sources), array('' => t('No comments')));
+  $default_values = comment_sources_type_settings();
   foreach ($node_types as $key => $value) {
     $form["comment_sources_$key"] = array(
       '#type' => 'radios',
@@ -38,15 +38,15 @@ function comment_sources_admin_settings_form() {
 function comment_sources_save_admin_form($form, $form_state) {
 
   // Create an array for each comment source with the list of selected node types
-  $selected_sources = array();
+  $type_settings = array();
   if (isset($form_state['values'])) {
     foreach ($form_state['values'] as $key => $value) {
       $key = str_replace('comment_sources_', '', $key);
-      $selected_sources[$key] = $value;
+      $type_settings[$key] = $value;
     }
   }
 
-  comment_sources_save(comment_sources_enabled_sources(), $selected_sources);
+  comment_sources_save_type_settings($type_settings);
 }
 
 
