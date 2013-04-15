@@ -24,7 +24,7 @@ function comment_sources_admin_settings_form() {
       '#title' => check_plain($value->name),
       '#options' => $options,
       '#default_value' => isset($default_values[$key]) ? $default_values[$key] : '',
-    );
+      );
   }
 
   $form = system_settings_form($form);
@@ -48,4 +48,5 @@ function comment_sources_save_admin_form($form, $form_state) {
 
   comment_sources_save_type_settings($type_settings);
 }
+
 
