@@ -135,19 +135,10 @@ function _comment_sources_save_comment($enabled_nodetypes) {
  * Gets the most recent Drupal comments for a content type.
  */
 function _comment_sources_recent_comments_comment($count) {
-  $comments = db_select('comment', 'c')
-    ->innerJoin('node', 'n', 'n.nid = c.nid')
-    ->addTag('node_access')
-    ->fields('c')
-    ->condition('c.status', COMMENT_PUBLISHED)
-    ->condition('n.status', NODE_PUBLISHED)
-    // Additionally order by cid to ensure that comments with the same timestamp
-    // are returned in the exact order posted.
-    ->orderBy('c.created', 'DESC')
-    ->orderBy('c.cid', 'DESC')
-    ->range(0, $count)
-    ->execute()
-    ->fetchAll();
+  // Additionally order by cid to ensure that comments with the same timestamp
+  $comments = db_select('comment', 'c')->innerJoin('node', 'n', 'n.nid = c.nid')->addTag('node_access')->fields('c')->condition('c.status', COMMENT_PUBLISHED)->condition('n.status', NODE_PUBLISHED)
+  // are returned in the exact order posted.
+  ->orderBy('c.created', 'DESC')->orderBy('c.cid', 'DESC')->range(0, $count)->execute()->fetchAll();
 
   return $comments ? $comments : array();
 }
@@ -178,12 +169,12 @@ function _comment_sources_recent_comments_disqus($count) {
         else {
           $posts = $disqus->get_forum_posts($forum_id, array(
               'forum_api_key' => $forum_api_key,
-              'limit' => $count
-          ));
+              'limit' => $count,
+            ));
         }
       }
     }
-    catch (DisqusException $d) {
+    catch(DisqusException$d) {
       watchdog('comment_sources', "Error trying to retrieve comments from Disqus", array(), WATCHDOG_ERROR);
     }
   }
@@ -198,3 +189,4 @@ function _comment_sources_recent_comments_disqus($count) {
 function _comment_sources_recent_comments_fb_social($content_type, $count) {
   return array();
 }
+
