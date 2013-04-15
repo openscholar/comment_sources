@@ -14,7 +14,11 @@ class CommentSourcesAPITestCase extends DrupalWebTestCase {
    */
   public function setUp($modules) {
     if ($this->testEnvConfigured()) {
-      $this->privileged_user = $this->drupalCreateUser(array('administer content types', 'edit own page content', 'administer comments'));
+      $this->privilegedUser = $this->drupalCreateUser(array(
+        'administer content types',
+        'edit own page content',
+        'administer comments',
+      ));
       if (is_array($modules)) {
         $modules[] = 'comment_sources';
       }
@@ -267,8 +271,14 @@ class CommentSourcesNodeTypeFormEditTestCase extends CommentSourcesAPITestCase {
   public function setUp() {
     parent::setUp(array('disqus'));
     if ($this->testEnvConfigured()) {
-      $this->privileged_user = $this->drupalCreateUser(array('view disqus comments', 'administer content types', 'edit own page content', 'administer comments', 'create page content'));
-      $this->drupalLogin($this->privileged_user);
+      $this->privilegedUser = $this->drupalCreateUser(array(
+        'view disqus comments',
+        'administer content types',
+        'edit own page content',
+        'administer comments',
+        'create page content',
+      ));
+      $this->drupalLogin($this->privilegedUser);
     }
   }
 
@@ -304,8 +314,15 @@ class CommentSourcesNodeFormEditTestCase extends CommentSourcesAPITestCase {
   public function setUp() {
     parent::setUp(array('disqus'));
     if ($this->testEnvConfigured()) {
-      $this->privileged_user = $this->drupalCreateUser(array('view disqus comments', 'toggle disqus comments', 'administer content types', 'edit own page content', 'administer comments', 'create page content'));
-      $this->drupalLogin($this->privileged_user);
+      $this->privilegedUser = $this->drupalCreateUser(array(
+        'view disqus comments',
+        'toggle disqus comments',
+        'administer content types',
+        'edit own page content',
+        'administer comments',
+        'create page content',
+      ));
+      $this->drupalLogin($this->privilegedUser);
     }
   }
 
@@ -372,9 +389,22 @@ class CommentSourcesDisplayCommentsTestCase extends CommentSourcesAPITestCase {
     variable_set('disqus_domain', 'localhost');
 
     if ($this->testEnvConfigured()) {
-      $this->web_user = $this->drupalCreateUser(array('access comments', 'post comments', 'create article content', 'edit own comments', 'view disqus comments'));
-      $this->privileged_user = $this->drupalCreateUser(array('view disqus comments', 'toggle disqus comments', 'administer content types', 'edit own page content', 'administer comments', 'create page content'));
-      $this->drupalLogin($this->privileged_user);
+      $this->webUser = $this->drupalCreateUser(array(
+        'access comments',
+        'post comments',
+        'create article content',
+        'edit own comments',
+        'view disqus comments')
+      );
+      $this->privilegedUser = $this->drupalCreateUser(array(
+        'view disqus comments',
+        'toggle disqus comments',
+        'administer content types',
+        'edit own page content',
+        'administer comments',
+        'create page content',
+      ));
+      $this->drupalLogin($this->privilegedUser);
     }
   }
 

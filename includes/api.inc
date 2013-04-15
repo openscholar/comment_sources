@@ -12,7 +12,7 @@
  * If that's the case, provide a callback function to retrieve each comment
  * source associated with that module.
  *
- * @return
+ * @return array
  *   An array of available comment sources, keyed by machine name.
  */
 function _comment_sources_sources() {
@@ -46,7 +46,7 @@ function _comment_sources_sources() {
 /**
  * Gets list of the currently enabled comment sources.
  *
- * @return
+ * @return array
  *   An array of enabled comment sources, keyed by machine name.
  */
 function comment_sources_enabled_sources() {
@@ -78,7 +78,7 @@ function comment_sources_enabled_sources() {
  * @param string $source
  *   A machine name of a comment source
  *
- * @return
+ * @return bool
  *   Returns TRUE only if the source is available and provides a value for
  *   'supports_recent_comments' that casts to TRUE.
  */
@@ -153,7 +153,7 @@ function comment_sources_set_type_source($source, $type, $vsite = FALSE) {
  * @param mixed $node_info
  *   Accepts a node object, node type string or nid.
  *
- * @return
+ * @return mixed
  *   One of the available source strings, or FALSE if passed invalid param.
  */
 function comment_sources_get_source($node_info) {
@@ -188,7 +188,7 @@ function comment_sources_get_source($node_info) {
  * @param string $source
  *   A machine name of a comment source.
  *
- * @return
+ * @return bool
  *   TRUE only if the node is found and stored with has_comments = 1.
  *
  * Uses drupal_static("comment_sources_has_comments") to store:
@@ -307,7 +307,7 @@ function _comment_sources_form_options() {
  * @param string $default_source
  *   What to return for a nodetype if no source is returned.
  *
- * @return
+ * @return array
  *   An array containing comment sources keyed by node type
  */
 function comment_sources_type_settings($default_source = '') {
@@ -360,7 +360,7 @@ function comment_sources_type_settings($default_source = '') {
  * @param int $count
  *   The maximum number of comments to return.
  *
- * @return
+ * @return array
  *   An array of recent comments.
  */
 function comment_sources_recent_comments($source, $count = 10) {
@@ -375,16 +375,16 @@ function comment_sources_recent_comments($source, $count = 10) {
 /**
  * Records the comment source and status (1 or 0) for the given node.
  *
- * @param $node
+ * @param mixed $node
  *   A node object or node ID.
- * @param $source
+ * @param string $source
  *   A machine name of an available comment source.
- * @param $status
+ * @param int $status
  *   Whether comments are enabled or disabled.
- * @param $new
+ * @param bool $new
  *   Whether this node is new (just being created).
  *
- * @return
+ * @return bool
  *   TRUE if the node settings were successfully updated.
  */
 function comment_sources_record_node_settings($node, $source, $status, $new = FALSE) {
@@ -496,15 +496,18 @@ function comment_sources_get_status($node) {
 function comment_sources_should_display_comments($node, $source) {
   $result = TRUE;
   if ($node && $node->nid) {
-    $record = db_select('comment_sources_comments', 'c')->condition('c.nid', $node->nid)->fields('c', array('source', 'status', 'has_comments'))->execute();
+    $record = db_select('comment_sources_comments', 'c')
+      ->condition('c.nid', $node->nid)
+      ->fields('c', array('source', 'status', 'has_comments'))
+      ->execute();
     foreach ($record as $row) {
       if ($row->source == $source) {
-        // Always display if there are comments for the selected source
+        // Always displays if there are comments for the selected source.
         if ($row->has_comments) {
           $result = TRUE;
           break;
         }
-        // Disable if comments not enabled for the node
+        // Disables if comments not enabled for the node.
         else {
           if (!$row->status) {
             $result = FALSE;
@@ -512,7 +515,7 @@ function comment_sources_should_display_comments($node, $source) {
         }
       }
       else {
-        // Disable if there are comments for another content type
+        // Disables if there are comments for another content type.
         if ($row->has_comments) {
           $result = FALSE;
         }

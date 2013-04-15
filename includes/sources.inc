@@ -25,7 +25,7 @@ function _comment_sources_preset_fb_social() {
  * @param NULL $null
  *   unused @todo remove?
  *
- * @return
+ * @return array
  *   An array of enabled sources for fb_social.
  */
 function comment_sources_fb_social($null = NULL) {

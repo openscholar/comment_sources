@@ -309,4 +309,3 @@ function comment_sources_views_default_views() {
   $export['review_comments'] = $view;
   return $export;
 }
-
