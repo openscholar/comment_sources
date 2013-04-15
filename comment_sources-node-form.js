@@ -1,4 +1,6 @@
-
+/**
+ * Enhances node and node type edit forms.
+ */
 (function ($) {
 
 Drupal.behaviors.commentFieldsetSummaries = {

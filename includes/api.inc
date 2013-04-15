@@ -97,11 +97,7 @@ function comment_sources_record_comment_ajax() {
     'source' => $_GET['source'],
   );
   if (!empty($query_data['source']) && !empty($query_data['nid'])) {
-    $record = db_select('comment_sources_comments', 'c')
-      ->condition('c.nid', $query_data['nid'])
-      ->condition('c.source', $query_data['source'])
-      ->fields('c', array('nid'))
-      ->execute();
+    $record = db_select('comment_sources_comments', 'c')->condition('c.nid', $query_data['nid'])->condition('c.source', $query_data['source'])->fields('c', array('nid'))->execute();
     $data = array(
       'nid' => $query_data['nid'],
       'source' => $query_data['source'],
@@ -234,11 +230,7 @@ function comment_sources_has_comments($node, $source) {
   // Default value is FALSE if we don't find any information in the database.
   $has_comments[$source][$nid] = FALSE;
   // Gets the "has_comments" value from the database.
-  $record = db_select('comment_sources_comments', 'c')
-    ->condition('c.nid', $nid)
-    ->condition('c.source', $source)
-    ->fields('c', array('has_comments'))
-    ->execute();
+  $record = db_select('comment_sources_comments', 'c')->condition('c.nid', $nid)->condition('c.source', $source)->fields('c', array('has_comments'))->execute();
   if ($record->rowCount() == 1) {
     $has_comments[$source][$nid] = ($record->fetchField(0) == 1);
   }
@@ -406,20 +398,14 @@ function comment_sources_record_node_settings($node, $source, $status, $new = FA
 /**
  * @todo
  */
-function _comment_sources_record_node_drupal($nid, $source, $status, $new) {
-
-}
+function _comment_sources_record_node_drupal($nid, $source, $status, $new) {}
 
 /**
  * @todo
  */
 function _comment_sources_record_node_external($nid, $source, $status, $new) {
   // Finds any existing record of this node and this source.
-  $record = db_select('comment_sources_comments', 'c')
-    ->condition('c.nid', $nid)
-    ->condition('c.source', $source)
-    ->fields('c', array('nid'))
-    ->execute();
+  $record = db_select('comment_sources_comments', 'c')->condition('c.nid', $nid)->condition('c.source', $source)->fields('c', array('nid'))->execute();
 
   // Makes the data array to write to the database.
   $data = array(
@@ -451,12 +437,7 @@ function comment_sources_get_type_setting($type) {
  */
 function comment_sources_get_source_node($node) {
   // Returns the first-recorded comment source for this node.
-  $results = db_select('comment_sources_comments', 'c')
-    ->orderBy('cid', 'ASC')
-    ->condition('nid', $node->nid)
-    ->fields('c', array('source'))
-    ->execute()
-    ->fetchAllAssoc('cid');
+  $results = db_select('comment_sources_comments', 'c')->orderBy('cid', 'ASC')->condition('nid', $node->nid)->fields('c', array('source'))->execute()->fetchAllAssoc('cid');
   foreach ($results as $cid => $record) {
     return $record->source;
   }
@@ -472,16 +453,11 @@ function comment_sources_get_status($node) {
   if (is_object($node) && $node->nid) {
     $nid = $node->nid;
   }
-  else if (is_numeric($node)) {
+  elseif (is_numeric($node)) {
     $nid = $node;
   }
   // Returns the first-recorded comment source for this node.
-  $results = db_select('comment_sources_comments', 'c')
-    ->orderBy('cid', 'ASC')
-    ->condition('nid', $nid)
-    ->fields('c', array('status'))
-    ->execute()
-    ->fetchAllAssoc('cid');
+  $results = db_select('comment_sources_comments', 'c')->orderBy('cid', 'ASC')->condition('nid', $nid)->fields('c', array('status'))->execute()->fetchAllAssoc('cid');
   foreach ($results as $cid => $record) {
     return $record->status;
   }
@@ -501,28 +477,28 @@ function comment_sources_get_status($node) {
  * @todo verify logic
  */
 function comment_sources_should_display_comments($node, $source) {
-//  if (is_numeric($node)) {
-//    $node = node_load($node);
-//  }
-//
-//  if ($node && $node->nid) {
-//    // Finds any record of this node with this comment source.
-//    $results = db_select('comment_sources_comments', 'c')
-//      ->condition('nid', $node->nid)
-//      ->condition('source', $source)
-//      ->fields('c', array('status', 'has_comments'))
-//      ->execute()
-//      ->fetchAllAssoc('nid');
-//
-//    // Returns TRUE if the source is status != 0.
-//    foreach ($results as $nid => $info) {
-//      if ($info['status']) {
-//        return TRUE;
-//      }
-//    }
-//  }
-//
-//  return FALSE;
+  //  if (is_numeric($node)) {
+  //    $node = node_load($node);
+  //  }
+  //
+  //  if ($node && $node->nid) {
+  //    // Finds any record of this node with this comment source.
+  //    $results = db_select('comment_sources_comments', 'c')
+  //      ->condition('nid', $node->nid)
+  //      ->condition('source', $source)
+  //      ->fields('c', array('status', 'has_comments'))
+  //      ->execute()
+  //      ->fetchAllAssoc('nid');
+  //
+  //    // Returns TRUE if the source is status != 0.
+  //    foreach ($results as $nid => $info) {
+  //      if ($info['status']) {
+  //        return TRUE;
+  //      }
+  //    }
+  //  }
+  //
+  //  return FALSE;
   $result = TRUE;
   if ($node && $node->nid) {
     $record = db_select('comment_sources_comments', 'c')->condition('c.nid', $node->nid)->fields('c', array('source', 'status', 'has_comments'))->execute();
@@ -550,3 +526,4 @@ function comment_sources_should_display_comments($node, $source) {
   }
   return $result;
 }
+
