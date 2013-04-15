@@ -9,7 +9,9 @@
  * Implements hook_views_default_views().
  */
 function comment_sources_views_default_views() {
-  $view = new view;
+  $export = array();
+
+  $view = new view();
   $view->name = 'review_comments';
   $view->description = 'Contains a block page to to review and approve Drupal comments';
   $view->tag = 'default';
@@ -304,7 +306,7 @@ function comment_sources_views_default_views() {
   $handler->display->display_options['fields']['delete_comment']['link_to_node'] = 0;
   $handler->display->display_options['path'] = 'comments/review';
 
-  $views[$view->name] = $view;
-  return $views;
+  $export['review_comments'] = $view;
+  return $export;
 }
 

@@ -6,7 +6,7 @@
  */
 
 /**
- * Gets Facebook Social comment presets
+ * Gets Facebook Social comment presets.
  */
 function _comment_sources_preset_fb_social() {
   $presets = array();
@@ -25,7 +25,8 @@ function _comment_sources_preset_fb_social() {
  * @param NULL $null
  *   unused @todo remove?
  *
- * @return array $enabled_sources
+ * @return
+ *   An array of enabled sources for fb_social.
  */
 function comment_sources_fb_social($null = NULL) {
   $enabled_sources = array();
@@ -34,7 +35,7 @@ function comment_sources_fb_social($null = NULL) {
 
   if (count($presets) > 0) {
     foreach ($presets as $preset) {
-      $enabled_sources[join(":", array('fb_social', $preset->name))] = array(
+      $enabled_sources[implode(':', array('fb_social', $preset->name))] = array(
         'description' => $preset->name,
       );
     }
@@ -73,7 +74,7 @@ function _comment_sources_load_fb_social($variant = '') {
 }
 
 /**
- * Gets Drupal node types comment settings
+ * Gets Drupal node types comment settings.
  *
  * @return array
  *   Node types using Drupal core comments.
@@ -136,9 +137,8 @@ function _comment_sources_save_comment($enabled_nodetypes) {
  */
 function _comment_sources_recent_comments_comment($count) {
   // Additionally order by cid to ensure that comments with the same timestamp
-  $comments = db_select('comment', 'c')->innerJoin('node', 'n', 'n.nid = c.nid')->addTag('node_access')->fields('c')->condition('c.status', COMMENT_PUBLISHED)->condition('n.status', NODE_PUBLISHED)
   // are returned in the exact order posted.
-  ->orderBy('c.created', 'DESC')->orderBy('c.cid', 'DESC')->range(0, $count)->execute()->fetchAll();
+  $comments = db_select('comment', 'c')->innerJoin('node', 'n', 'n.nid = c.nid')->addTag('node_access')->fields('c')->condition('c.status', COMMENT_PUBLISHED)->condition('n.status', NODE_PUBLISHED)->orderBy('c.created', 'DESC')->orderBy('c.cid', 'DESC')->range(0, $count)->execute()->fetchAll();
 
   return $comments ? $comments : array();
 }
@@ -189,4 +189,3 @@ function _comment_sources_recent_comments_disqus($count) {
 function _comment_sources_recent_comments_fb_social($content_type, $count) {
   return array();
 }
-

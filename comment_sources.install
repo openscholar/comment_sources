@@ -51,9 +51,11 @@ function comment_sources_schema() {
   return $schema;
 }
 
+/**
+ * Implements hook_install().
+ */
 function comment_sources_install() {
   $result = db_query("SELECT weight FROM {system} WHERE name = 'disqus'")->fetchObject();
   $weight = (isset($result->weight)) ? $result->weight : 0;
   db_query("UPDATE {system} SET weight = :weight WHERE name = 'comment_sources'", array(':weight' => $weight + 1));
 }
-

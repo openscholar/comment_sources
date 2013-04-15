@@ -33,11 +33,11 @@ function comment_sources_admin_settings_form() {
 }
 
 /**
- * Save the comment source selections by node type
+ * Save the comment source selections by node type.
  */
 function comment_sources_save_admin_form($form, $form_state) {
 
-  // Create an array for each comment source with the list of selected node types
+  // Create an array for each comment source listing selected node types.
   $type_settings = array();
   if (isset($form_state['values'])) {
     foreach ($form_state['values'] as $key => $value) {
@@ -48,4 +48,3 @@ function comment_sources_save_admin_form($form, $form_state) {
 
   comment_sources_save_type_settings($type_settings);
 }
-

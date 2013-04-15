@@ -6,11 +6,14 @@
  */
 
 class CommentSourcesAPITestCase extends DrupalWebTestCase {
-  protected $web_user;
-  protected $privileged_user;
+  protected $webUser;
+  protected $privilegedUser;
 
+  /**
+   * Overrides parent::setUp().
+   */
   public function setUp($modules) {
-    if ($this->test_environment_configured()) {
+    if ($this->testEnvConfigured()) {
       $this->privileged_user = $this->drupalCreateUser(array('administer content types', 'edit own page content', 'administer comments'));
       if (is_array($modules)) {
         $modules[] = 'comment_sources';
@@ -26,11 +29,17 @@ class CommentSourcesAPITestCase extends DrupalWebTestCase {
     }
   }
 
-  public function test_environment_configured() {
+  /**
+   * Checks the proper modules are enabled.
+   */
+  public function testEnvConfigured() {
     return module_exists('disqus') && module_exists('fb_social');
   }
 
-  public function create_page_node() {
+  /**
+   * Creates a node of type page.
+   */
+  public function createPageNode() {
     $settings = array(
       'title' => $this->randomName(32),
       'body[und][0][value]' => $this->randomName(64),
@@ -41,7 +50,9 @@ class CommentSourcesAPITestCase extends DrupalWebTestCase {
 }
 
 class CommentSourcesNoModulesTestCase extends CommentSourcesAPITestCase {
-
+  /**
+   * Overrides parent::getInfo().
+   */
   public static function getInfo() {
     return array(
       'name' => 'No Comment Modules Tests',
@@ -50,12 +61,18 @@ class CommentSourcesNoModulesTestCase extends CommentSourcesAPITestCase {
     );
   }
 
+  /**
+   * Overrides parent::setUp().
+   */
   public function setUp() {
     parent::setUp(array());
   }
 
+  /**
+   * Test.
+   */
   public function testCommentSourcesGetSources() {
-    if ($this->test_environment_configured()) {
+    if ($this->testEnvConfigured()) {
       $sources = comment_sources_enabled_sources();
       $this->assertEqual(1, count($sources), $message = "With only core commenting modules enabled, only one sources should be available");
       $this->assert(array_key_exists('comment', $sources));
@@ -65,6 +82,9 @@ class CommentSourcesNoModulesTestCase extends CommentSourcesAPITestCase {
 
 class CommentSourcesDisqusEnabledTestCase extends CommentSourcesAPITestCase {
 
+  /**
+   * Overrides parent::getInfo().
+   */
   public static function getInfo() {
     return array(
       'name' => 'Disqus Enabled Tests',
@@ -73,12 +93,18 @@ class CommentSourcesDisqusEnabledTestCase extends CommentSourcesAPITestCase {
     );
   }
 
+  /**
+   * Overrides parent::setUp().
+   */
   public function setUp() {
     parent::setUp(array('disqus'));
   }
 
+  /**
+   * Test.
+   */
   public function testCommentSourcesGetSources() {
-    if ($this->test_environment_configured()) {
+    if ($this->testEnvConfigured()) {
       $sources = comment_sources_enabled_sources();
       $this->assertEqual(2, count($sources), $message = "With only Disqus commenting module enabled, two sources should be available");
       $this->assert(array_key_exists('comment', $sources));
@@ -89,6 +115,9 @@ class CommentSourcesDisqusEnabledTestCase extends CommentSourcesAPITestCase {
 
 class CommentSourcesFacebookEnabledTestCase extends DrupalWebTestCase {
 
+  /**
+   * Overrides parent::getInfo().
+   */
   public static function getInfo() {
     return array(
       'name' => 'Facebook Enabled Tests',
@@ -97,17 +126,23 @@ class CommentSourcesFacebookEnabledTestCase extends DrupalWebTestCase {
     );
   }
 
+  /**
+   * Overrides parent::setUp().
+   */
   public function setUp() {
     if (module_exists('disqus') && module_exists('fb_social')) {
       parent::setUp(array('disqus', 'fb_social'));
       module_load_include("php", "comment_sources", "comment_sources.api");
-      $this->setup_fb_social_preset();
+      $this->setupFbSocialPreset();
     }
     else {
       parent::setUp();
     }
   }
 
+  /**
+   * Test.
+   */
   public function testCommentSourcesGetSources() {
     if (module_exists('disqus') && module_exists('fb_social')) {
       $sources = comment_sources_enabled_sources();
@@ -118,7 +153,10 @@ class CommentSourcesFacebookEnabledTestCase extends DrupalWebTestCase {
     }
   }
 
-  protected function setup_fb_social_preset() {
+  /**
+   * Test.
+   */
+  protected function setupFbSocialPreset() {
     if (module_exists("fb_social")) {
       $data = array(
         'name' => 'Comments',
@@ -135,7 +173,9 @@ class CommentSourcesFacebookEnabledTestCase extends DrupalWebTestCase {
 }
 
 class CommentSourcesSetSourceTestCase extends CommentSourcesAPITestCase {
-
+  /**
+   * Overrides parent::getInfo().
+   */
   public static function getInfo() {
     return array(
       'name' => 'Set Comment Source Test',
@@ -144,26 +184,38 @@ class CommentSourcesSetSourceTestCase extends CommentSourcesAPITestCase {
     );
   }
 
+  /**
+   * Overrides parent::setUp().
+   */
   public function setUp() {
     parent::setUp(array('disqus', 'fb_social'));
   }
 
+  /**
+   * Test.
+   */
   public function testCommentSourceInvalidContentType() {
-    if ($this->test_environment_configured()) {
+    if ($this->testEnvConfigured()) {
       $result = comment_sources_set_source('bogus', 'disqus');
       $this->assertFalse($result, $message = "Should fail due to bad content type");
     }
   }
 
+  /**
+   * Test.
+   */
   public function testCommentSourceInvalidSource() {
-    if ($this->test_environment_configured()) {
+    if ($this->testEnvConfigured()) {
       $result = comment_sources_set_source('article', 'bogus');
       $this->assertFalse($result, $message = "Should fail due to bad comment source");
     }
   }
 
+  /**
+   * Test.
+   */
   public function testCommentSourceSaveDisqusComment() {
-    if ($this->test_environment_configured()) {
+    if ($this->testEnvConfigured()) {
       $result = comment_sources_set_source('article', 'disqus');
       $this->assertTrue($result);
       $sources = comment_sources_load(comment_sources_enabled_sources());
@@ -171,8 +223,11 @@ class CommentSourcesSetSourceTestCase extends CommentSourcesAPITestCase {
     }
   }
 
+  /**
+   * Test.
+   */
   public function testCommentSourceSaveDrupalComment() {
-    if ($this->test_environment_configured()) {
+    if ($this->testEnvConfigured()) {
       $result = comment_sources_set_source('article', 'comment');
       $this->assertTrue($result);
       $sources = comment_sources_load(comment_sources_enabled_sources());
@@ -180,8 +235,11 @@ class CommentSourcesSetSourceTestCase extends CommentSourcesAPITestCase {
     }
   }
 
+  /**
+   * Test.
+   */
   public function testCommentSourceSaveNoComment() {
-    if ($this->test_environment_configured()) {
+    if ($this->testEnvConfigured()) {
       $result = comment_sources_set_source('article', '');
       $this->assertTrue($result);
       $sources = comment_sources_load(comment_sources_enabled_sources());
@@ -192,7 +250,9 @@ class CommentSourcesSetSourceTestCase extends CommentSourcesAPITestCase {
 }
 
 class CommentSourcesNodeTypeFormEditTestCase extends CommentSourcesAPITestCase {
-
+  /**
+   * Overrides parent::getInfo().
+   */
   public static function getInfo() {
     return array(
       'name' => 'Content type edit page',
@@ -201,16 +261,22 @@ class CommentSourcesNodeTypeFormEditTestCase extends CommentSourcesAPITestCase {
     );
   }
 
+  /**
+   * Overrides parent::setUp().
+   */
   public function setUp() {
     parent::setUp(array('disqus'));
-    if ($this->test_environment_configured()) {
+    if ($this->testEnvConfigured()) {
       $this->privileged_user = $this->drupalCreateUser(array('view disqus comments', 'administer content types', 'edit own page content', 'administer comments', 'create page content'));
       $this->drupalLogin($this->privileged_user);
     }
   }
 
+  /**
+   * Test.
+   */
   public function testCommentSourceEditNodeType() {
-    if ($this->test_environment_configured()) {
+    if ($this->testEnvConfigured()) {
       $this->drupalGet("admin/structure/types/manage/page");
       $this->assertResponse(200);
       $this->assertFieldByName('comment_source', 'comment');
@@ -221,7 +287,9 @@ class CommentSourcesNodeTypeFormEditTestCase extends CommentSourcesAPITestCase {
 }
 
 class CommentSourcesNodeFormEditTestCase extends CommentSourcesAPITestCase {
-
+  /**
+   * Overrides parent::getInfo().
+   */
   public static function getInfo() {
     return array(
       'name' => 'Node edit page',
@@ -230,18 +298,24 @@ class CommentSourcesNodeFormEditTestCase extends CommentSourcesAPITestCase {
     );
   }
 
+  /**
+   * Overrides parent::setUp().
+   */
   public function setUp() {
     parent::setUp(array('disqus'));
-    if ($this->test_environment_configured()) {
+    if ($this->testEnvConfigured()) {
       $this->privileged_user = $this->drupalCreateUser(array('view disqus comments', 'toggle disqus comments', 'administer content types', 'edit own page content', 'administer comments', 'create page content'));
       $this->drupalLogin($this->privileged_user);
     }
   }
 
+  /**
+   * Test.
+   */
   public function testCommentSourceDisableDrupalComments() {
-    if ($this->test_environment_configured()) {
+    if ($this->testEnvConfigured()) {
       comment_sources_set_source('page', 'comment');
-      $this->create_page_node();
+      $this->createPageNode();
       $this->drupalGet("node/1/edit");
       $this->assertFieldByName('comment');
       $this->assertNoFieldByName('disqus_status');
@@ -256,10 +330,13 @@ class CommentSourcesNodeFormEditTestCase extends CommentSourcesAPITestCase {
     }
   }
 
+  /**
+   * Test.
+   */
   public function testCommentSourceDisableDisqusComments() {
-    if ($this->test_environment_configured()) {
+    if ($this->testEnvConfigured()) {
       comment_sources_set_source('page', 'disqus');
-      $this->create_page_node();
+      $this->createPageNode();
       $this->drupalGet("node/1/edit");
       $this->assertFieldByName('disqus_status');
       $this->drupalPost('node/1/edit', array(
@@ -276,6 +353,9 @@ class CommentSourcesNodeFormEditTestCase extends CommentSourcesAPITestCase {
 
 class CommentSourcesDisplayCommentsTestCase extends CommentSourcesAPITestCase {
 
+  /**
+   * Overrides parent::getInfo().
+   */
   public static function getInfo() {
     return array(
       'name' => 'Node view page',
@@ -284,31 +364,40 @@ class CommentSourcesDisplayCommentsTestCase extends CommentSourcesAPITestCase {
     );
   }
 
+  /**
+   * Overrides parent::setUp().
+   */
   public function setUp() {
     parent::setUp(array('disqus'));
     variable_set('disqus_domain', 'localhost');
 
-    if ($this->test_environment_configured()) {
+    if ($this->testEnvConfigured()) {
       $this->web_user = $this->drupalCreateUser(array('access comments', 'post comments', 'create article content', 'edit own comments', 'view disqus comments'));
       $this->privileged_user = $this->drupalCreateUser(array('view disqus comments', 'toggle disqus comments', 'administer content types', 'edit own page content', 'administer comments', 'create page content'));
       $this->drupalLogin($this->privileged_user);
     }
   }
 
+  /**
+   * Test.
+   */
   public function testCommentSourceDrupalComments() {
-    if ($this->test_environment_configured()) {
+    if ($this->testEnvConfigured()) {
       comment_sources_set_source('page', 'comment');
-      $this->create_page_node();
+      $this->createPageNode();
       $this->drupalGet("node/1");
       $this->assertFieldByName('comment_body[und][0][value]');
       $this->assertNoRaw('disqus_thread');
     }
   }
 
+  /**
+   * Test.
+   */
   public function testCommentSourceDisqusComments() {
-    if ($this->test_environment_configured()) {
+    if ($this->testEnvConfigured()) {
       comment_sources_set_source('page', 'disqus');
-      $this->create_page_node();
+      $this->createPageNode();
       $this->drupalGet("node/1");
       $this->assertNoFieldByName('comment_body[und][0][value]');
       $this->assertRaw('disqus_thread');
@@ -319,6 +408,9 @@ class CommentSourcesDisplayCommentsTestCase extends CommentSourcesAPITestCase {
 
 class CommentSourcesSupportsRecentCommentsTestCase extends DrupalWebTestCase {
 
+  /**
+   * Overrides parent::getInfo().
+   */
   public static function getInfo() {
     return array(
       'name' => 'Support for recent comments',
@@ -327,17 +419,25 @@ class CommentSourcesSupportsRecentCommentsTestCase extends DrupalWebTestCase {
     );
   }
 
+  /**
+   * Test.
+   */
   public function testCommentSourceDrupalRecentCommentsSupported() {
     $this->assertTrue(comment_sources_supports_recent_comments('comment'));
   }
 
+  /**
+   * Test.
+   */
   public function testCommentSourceDisqusRecentCommentsSupported() {
     $this->assertTrue(comment_sources_supports_recent_comments('disqus'));
   }
 
+  /**
+   * Test.
+   */
   public function testCommentSourceFacebookRecentCommentsSupported() {
     $this->assertFalse(comment_sources_supports_recent_comments('fb_social'));
   }
 
 }
-

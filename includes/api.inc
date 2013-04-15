@@ -12,7 +12,8 @@
  * If that's the case, provide a callback function to retrieve each comment
  * source associated with that module.
  *
- * @return array $sources
+ * @return
+ *   An array of available comment sources, keyed by machine name.
  */
 function _comment_sources_sources() {
   // Drupal content style guide: use "sentence caps" for headings and actions.
@@ -45,7 +46,8 @@ function _comment_sources_sources() {
 /**
  * Gets list of the currently enabled comment sources.
  *
- * @return array $enabled_sources
+ * @return
+ *   An array of enabled comment sources, keyed by machine name.
  */
 function comment_sources_enabled_sources() {
   $enabled_sources = &drupal_static(__FUNCTION__);
@@ -56,7 +58,7 @@ function comment_sources_enabled_sources() {
   $sources = _comment_sources_sources();
   $enabled_sources = array();
 
-  // Checks to ensure the comment source modules are enabled
+  // Checks to ensure the comment source modules are enabled.
   foreach ($sources as $key => $value) {
     if (module_exists($key)) {
       if (isset($value['children_callback'])) {
@@ -76,7 +78,7 @@ function comment_sources_enabled_sources() {
  * @param string $source
  *   A machine name of a comment source
  *
- * @return bool $supports_recent_comments
+ * @return
  *   Returns TRUE only if the source is available and provides a value for
  *   'supports_recent_comments' that casts to TRUE.
  */
@@ -151,7 +153,7 @@ function comment_sources_set_type_source($source, $type, $vsite = FALSE) {
  * @param mixed $node_info
  *   Accepts a node object, node type string or nid.
  *
- * @return mixed
+ * @return
  *   One of the available source strings, or FALSE if passed invalid param.
  */
 function comment_sources_get_source($node_info) {
@@ -186,7 +188,7 @@ function comment_sources_get_source($node_info) {
  * @param string $source
  *   A machine name of a comment source.
  *
- * @return bool $has_comments
+ * @return
  *   TRUE only if the node is found and stored with has_comments = 1.
  *
  * Uses drupal_static("comment_sources_has_comments") to store:
@@ -200,7 +202,6 @@ function comment_sources_get_source($node_info) {
  *   'source2' => array(...),
  * );
  * @endcode
- *
  */
 function comment_sources_has_comments($node, $source) {
   // Handles and validates $node param.
@@ -239,9 +240,10 @@ function comment_sources_has_comments($node, $source) {
 }
 
 /**
- * Saves a node type's current comment source
+ * Saves a node type's current comment source.
  *
- * @param array of the new comment sources, keyed by node type
+ * @param array $type_settings
+ *   The new comment sources values, keyed by node type.
  */
 function comment_sources_save_type_settings($type_settings) {
   // Flips the $nodetypes_sources array to be keyed by comment source.
@@ -305,7 +307,7 @@ function _comment_sources_form_options() {
  * @param string $default_source
  *   What to return for a nodetype if no source is returned.
  *
- * @return array $type_settings
+ * @return
  *   An array containing comment sources keyed by node type
  */
 function comment_sources_type_settings($default_source = '') {
@@ -358,7 +360,8 @@ function comment_sources_type_settings($default_source = '') {
  * @param int $count
  *   The maximum number of comments to return.
  *
- * @return array $recent_comments
+ * @return
+ *   An array of recent comments.
  */
 function comment_sources_recent_comments($source, $count = 10) {
   $recent_comments = array();
@@ -371,6 +374,18 @@ function comment_sources_recent_comments($source, $count = 10) {
 
 /**
  * Records the comment source and status (1 or 0) for the given node.
+ *
+ * @param $node
+ *   A node object or node ID.
+ * @param $source
+ *   A machine name of an available comment source.
+ * @param $status
+ *   Whether comments are enabled or disabled.
+ * @param $new
+ *   Whether this node is new (just being created).
+ *
+ * @return
+ *   TRUE if the node settings were successfully updated.
  */
 function comment_sources_record_node_settings($node, $source, $status, $new = FALSE) {
   // Handles and validates $node param.
@@ -396,12 +411,14 @@ function comment_sources_record_node_settings($node, $source, $status, $new = FA
 }
 
 /**
- * @todo
+ * Records the comment source and status for a drupal comment node.
  */
-function _comment_sources_record_node_drupal($nid, $source, $status, $new) {}
+function _comment_sources_record_node_drupal($nid, $source, $status, $new) {
+
+}
 
 /**
- * @todo
+ * Records the comment source and status for an external (3rd party) source.
  */
 function _comment_sources_record_node_external($nid, $source, $status, $new) {
   // Finds any existing record of this node and this source.
@@ -477,28 +494,6 @@ function comment_sources_get_status($node) {
  * @todo verify logic
  */
 function comment_sources_should_display_comments($node, $source) {
-  //  if (is_numeric($node)) {
-  //    $node = node_load($node);
-  //  }
-  //
-  //  if ($node && $node->nid) {
-  //    // Finds any record of this node with this comment source.
-  //    $results = db_select('comment_sources_comments', 'c')
-  //      ->condition('nid', $node->nid)
-  //      ->condition('source', $source)
-  //      ->fields('c', array('status', 'has_comments'))
-  //      ->execute()
-  //      ->fetchAllAssoc('nid');
-  //
-  //    // Returns TRUE if the source is status != 0.
-  //    foreach ($results as $nid => $info) {
-  //      if ($info['status']) {
-  //        return TRUE;
-  //      }
-  //    }
-  //  }
-  //
-  //  return FALSE;
   $result = TRUE;
   if ($node && $node->nid) {
     $record = db_select('comment_sources_comments', 'c')->condition('c.nid', $node->nid)->fields('c', array('source', 'status', 'has_comments'))->execute();
@@ -526,4 +521,3 @@ function comment_sources_should_display_comments($node, $source) {
   }
   return $result;
 }
-

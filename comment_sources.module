@@ -39,7 +39,7 @@ function comment_sources_menu() {
 }
 
 /**
- * Implements hook_form_FORM_ID_alter() for node_type_form.
+ * Implements hook_form_FORM_ID_alter() for node_type_form().
  */
 function comment_sources_form_node_type_form_alter(&$form, $form_state, $form_id) {
   // Modifies the node type edit form if type is set and comments enabled.
@@ -89,16 +89,15 @@ function comment_sources_form_node_type_form_alter(&$form, $form_state, $form_id
 }
 
 /**
- * Implements hook_form_BASE_FORM_ID_alter() for node_form.
+ * Implements hook_form_BASE_FORM_ID_alter() for node_form().
  */
 function comment_sources_form_node_form_alter(&$form, $form_state, $form_id) {
-  // Hides settings for inappropriate comment types
+  // Hides settings for inappropriate comment types.
   $node = $form['#node'];
 
   $source = comment_sources_get_source($node);
-  // Removes the preset name from fb_social sources
+  // Removes the preset name from fb_social sources.
   $source = preg_replace('/:.*$/', '', $source);
-  //$form['comment_sources_source'] = $source;
 
   $status = comment_sources_get_status($node);
 
@@ -132,7 +131,7 @@ function comment_sources_form_node_form_alter(&$form, $form_state, $form_id) {
     case 'disqus':
       // Don't hide Drupal comment options if there are pre-existing comments.
       // Note if the comments status is 'Hidden',
-      // comment_count will always be zero
+      // comment_count will always be zero.
       if (!isset($node->comment_count) || ($node->comment_count == 0)) {
         unset($form['comment_settings']['comment']);
       }
@@ -141,14 +140,14 @@ function comment_sources_form_node_form_alter(&$form, $form_state, $form_id) {
       break;
 
     case 'fb_social':
-      // See comment above re: disqus
+      // See comment above re: disqus.
       if (!isset($node->comment_count) || ($node->comment_count == 0)) {
         unset($form['comment_settings']['comment']);
       }
       unset($form['comment_settings']['disqus_status']);
 
       // Add node-specific Facebook comment settings, since they the aren't done
-      // in the fb_social module
+      // in the fb_social module.
       if (!isset($form['comment_settings'])) {
         $form['comment_settings'] = array(
           '#type' => 'fieldset',
@@ -187,7 +186,7 @@ function comment_sources_form_node_form_alter(&$form, $form_state, $form_id) {
 }
 
 /**
- * Saves the comment source setting for a content type
+ * Saves the comment source setting for a content type.
  */
 function _comment_sources_node_form_submit(&$form, $form_state) {
   $node = $form['node'];
@@ -228,7 +227,7 @@ function _comment_sources_get_node_data($form_state, $source) {
 }
 
 /**
- * Saves the comment source setting for a content type
+ * Saves the comment source setting for a content type.
  */
 function _comment_sources_node_type_form_submit(&$form, $form_state) {
   // Ensures we have a nodetype to update settings for.
@@ -252,7 +251,7 @@ function _comment_sources_node_type_form_submit(&$form, $form_state) {
  * Implements hook_node_view().
  */
 function comment_sources_node_view($node, $view_mode) {
-  // Adds javascript for recording comments made in a third-party system
+  // Adds javascript for recording comments made in a third-party system.
   $source = comment_sources_get_source($node);
   if (!in_array($source, array('comment', ''))) {
     drupal_add_js(array('comment_sources' => array('nid' => $node->nid)), 'setting');
@@ -303,4 +302,3 @@ function comment_sources_views_api() {
     'api' => 3.0,
   );
 }
-

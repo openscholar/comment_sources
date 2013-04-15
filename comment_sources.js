@@ -31,6 +31,3 @@ function fb_social_track_comments(params){
       }
   });
 }
-
-
-
