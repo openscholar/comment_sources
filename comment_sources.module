@@ -16,6 +16,44 @@ ctools_include('api', 'comment_sources');
 ctools_include('sources', 'comment_sources');
 
 /**
+ * Defines the value to store/check for a node's active sources which is OFF.
+ *
+ * Note: The following comment source statuses are for per-node-per-source
+ * records in the comment_source_comments table. When a new node is created, in
+ * most cases, no record will be added. A record will only be added when a user
+ * explicitly overrides the default active source for a node type.
+ *
+ * For example, if a comment source is selected (that is, if a nodetype is set
+ * to anything but "No comments", and the user unchecks the comment option on
+ * the node edit form, they are overriding the default behavior for that node
+ * type, and a record will be saved with COMMENT_SOURCES_OFF for that node ID
+ * and the active comment source.
+ */
+define('COMMENT_SOURCES_OFF', 0);
+
+/**
+ * Defines the value to store/check for a node's active sources which is ON.
+ *
+ * Note: If a node has never had comments added of any type, it will not have
+ * a record in the comment_sources_comments table. Once a comment is added of
+ * any kind, comment sources will add an entry with status=1 and has_comments=1.
+ *
+ * If a node type's source changes, nodes will by default keep the previous
+ * comment source if that individual node had comments. A user may override this
+ * on the node edit form, changing the previous status from "1" to "-1", and
+ * adding a second record for the same node ID with the new source and status 1.
+ */
+define('COMMENT_SOURCES_ON', 1);
+
+/**
+ * Defines the value to store/check for a node's inactive source with comments.
+ *
+ * Note: If a node has never had comments added of any type, it will not have
+ * a record in the comment_sources_comments table. This status
+ */
+define('COMMENT_SOURCES_HAS_PREVIOUS', -1);
+
+/**
  * Implements hook_menu().
  */
 function comment_sources_menu() {
@@ -95,36 +133,100 @@ function comment_sources_form_node_form_alter(&$form, $form_state, $form_id) {
   // Hides settings for inappropriate comment types.
   $node = $form['#node'];
 
-  $source = comment_sources_get_source($node);
+  // Gets the source for this node.
+  // For new nodes, this returns the current comment source for this type.
+  // Otherwise, this returns the stored comment source for this node.
+  $type_source = comment_sources_get_source_type($node->type);
   // Removes the preset name from fb_social sources.
-  $source = preg_replace('/:.*$/', '', $source);
+  $type_source = preg_replace('/:.*$/', '', $type_source);
 
-  $status = comment_sources_get_status($node);
+  // Sets the default status to TRUE (1) if this is a new node.
+  $is_new = !isset($node->nid) || isset($node->is_new);
+
+  if ($is_new) {
+    // Just use default for this node type.
+    if (!$type_source) {
+      // Exposes "No comments" with no options to change.
+      _comment_sources_form_node_form_alter($form, $form_state, $type_source, COMMENT_SOURCES_OFF);
+    }
+    else {
+      // Exposes on/off checkbox for this node type's active source.
+      _comment_sources_form_node_form_alter($form, $form_state, $type_source, COMMENT_SOURCES_ON);
+    }
+  }
+  else {
+    // Adds callback to process any updates to this node's comment source.
+    $form['#submit'][] = '_comment_sources_node_form_submit';
+    // Compares the node type comment source to any overridden per-node source.
+    $node_source = comment_sources_get_source_node($node);
+    // If this node's source is different...
+    if ($node_source != $type_source) {
+      // If the node's overridden setting is "No comments"...
+      if (!$node_source) {
+        // Exposes on/off checkbox for this type's active source default to OFF.
+        _comment_sources_form_node_form_alter($form, $form_state, $type_source, COMMENT_SOURCES_OFF);
+      }
+      // Otherwise, if the type's default source is "No comments"...
+      else if (!$type_source) {
+        // Exposes on/off checkbox for this node's overridden active source ON.
+        _comment_sources_form_node_form_alter($form, $form_state, $node_source, COMMENT_SOURCES_ON);
+      }
+      // Otherwise, if the node and type are both DIFFERENT sources...
+      else {
+        $has_comments = comment_sources_node_has_comments($node->nid, $node_source);
+        if ($has_comments) {
+          // Exposes on/off checkbox for this node's overridden active source ON
+          // And also provides a checkbox to
+          // "Use @type_source and hide previous @node_source comments"
+          _comment_sources_form_node_form_alter($form, $form_state, $node_source, COMMENT_SOURCES_ON, $type_source);
+        }
+        else {
+          // The previous overridden source has no comments.
+          // Simply exposes on/off checkbox for this type's active source.
+          _comment_sources_form_node_form_alter($form, $form_state, $type_source, COMMENT_SOURCES_ON);
+        }
+      }
+    }
+    else {
+      // Exposes on/off checkbox for this node type's active source.
+      _comment_sources_form_node_form_alter($form, $form_state, $type_source, COMMENT_SOURCES_ON);
+    }
+  }
+}
+
+function _comment_sources_form_node_form_alter(&$form, $form_state, $source, $status, $type_source = FALSE) {
+  // Makes changes to appearance and exits early if source is "No comments".
+  if (!$source) {
+    // Shows only a disabled radio option for "No comments".
+    unset($form['comment_settings']['disqus_status']);
+    unset($form['comment_settings']['fb_social_status']);
+    unset($form['comment_settings']['comment']);
+    $form['comment_settings']['no_comment'] = array(
+      '#type' => 'radios',
+      '#title' => t('No comments'),
+      //'#options' => array(0 => t('No comments')),
+      '#default_value' => 0,
+      '#disabled' => TRUE,
+    );
+    return;
+  }
 
   // Only displays one comment settings form on the node.
   switch ($source) {
     case 'comment':
       unset($form['comment_settings']['disqus_status']);
       unset($form['comment_settings']['fb_social_status']);
-      // Hides the default comment radio form element.
+//      unset($form['comment_settings']['comment'][COMMENT_NODE_HIDDEN]);
+//      unset($form['comment_settings']['comment'][COMMENT_NODE_CLOSED]);
+//      unset($form['comment_settings']['comment'][COMMENT_NODE_OPEN]);
       $form['comment_settings']['comment']['#type'] = 'value';
+      // Hides the default comment radio form element.
+      //$form['comment_settings']['comment']['#type'] = 'value';
       // Provides a checkbox to match other comment sources.
       $form['comment_settings']['comment_status'] = array(
         '#type' => 'checkbox',
         '#default_value' => $status,
         '#title' => t('Drupal comments'),
-      );
-      break;
-
-    case '':
-      unset($form['comment_settings']['disqus_status']);
-      unset($form['comment_settings']['fb_social_status']);
-      unset($form['comment_settings']['comment']);
-      $form['comment_settings']['no_comment'] = array(
-        '#type' => 'checkbox',
-        '#title' => t('No comments'),
-        '#default_value' => 1,
-        '#disabled' => TRUE,
       );
       break;
 
@@ -169,12 +271,10 @@ function comment_sources_form_node_form_alter(&$form, $form_state, $form_id) {
         '#type' => 'checkbox',
         '#title' => t('Facebook comments'),
         '#description' => t('Users can post comments using Facebook.'),
-        '#default_value' => ($status !== FALSE) ? $status : TRUE,
+        '#default_value' => $status,
       );
       break;
   }
-
-  $form['#submit'][] = '_comment_sources_node_form_submit';
 
   // Overrides the standard comment javascript with our improved version that
   // also handles comment sources.
@@ -184,15 +284,26 @@ function comment_sources_form_node_form_alter(&$form, $form_state, $form_id) {
     );
   }
 }
-
 /**
- * Saves the comment source setting for a content type.
+ * Implements hook_node_insert().
  */
-function _comment_sources_node_form_submit(&$form, $form_state) {
-  $node = $form['node'];
-  $source = isset($form['comment_sources_source']) ? $form['comment_sources_source'] : FALSE;
-  $data = _comment_sources_get_node_data($form_state, $source);
-  comment_sources_record_node_settings($node, $data['source'], $data['status']);
+function comment_sources_node_insert($node) {
+  // If this nodetype is set to "No comments", no record necessary.
+  $source = comment_sources_get_source_type($node->type);
+  if (!$source) {
+    return;
+  }
+
+  // Otherwise, we know some comment source is selected.
+  // Does nothing if this node is not being overridden to have comments OFF.
+  $status = '';
+  if ($status == COMMENT_SOURCES_ON) {
+    return;
+  }
+
+  // Otherwise, this node is being saved with the current source OFF,
+  // which overrides the default and requires a record.
+  comment_sources_record_node_settings($node, $source, $status);
 }
 
 /**

@@ -5,7 +5,15 @@
  * Administration form for the comment_sources module
  */
 
-module_load_include('api.inc', 'comment_sources');
+/**
+ * Includes non-hook functions and helper functions.
+ */
+ctools_include('api', 'comment_sources');
+
+/**
+ * Includes comment_sources hook implementations for Drupal, Facebook, Disqus.
+ */
+ctools_include('sources', 'comment_sources');
 
 /**
  * Menu callback; Displays the administration settings for comment sources.
@@ -37,7 +45,7 @@ function comment_sources_admin_settings_form() {
  */
 function comment_sources_save_admin_form($form, $form_state) {
 
-  // Create an array for each comment source listing selected node types.
+  // Creates an array for each comment source listing selected node types.
   $type_settings = array();
   if (isset($form_state['values'])) {
     foreach ($form_state['values'] as $key => $value) {

@@ -54,3 +54,17 @@ to be easily provided in other modules.
   fb_social comments depends on fb_social patch)
 * comments/review - Review and approve Drupal comments, filterable by content
   type
+
+## Schema
+
+### 7 Possible States -- how they are stored:
+
+   State                   node.comment   comment_sources_comments.source = 1
+--------------------------------------------------------------------------------
+A: No comments             0               ''
+B: Drupal comments (ON)    2               'comment'
+C: Drupal comments (OFF)   0               'comment'
+D: Disqus comments (ON)    0               'disqus'
+E: Disqus comments (OFF)   0               'disqus'
+F: Facebook comments (ON)  0               'fb_social'
+G: Facebook comments (OFF) 0               'fb_social'

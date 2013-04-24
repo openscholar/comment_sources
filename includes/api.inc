@@ -160,7 +160,7 @@ function comment_sources_get_source($node_info) {
   // If this looks like a nodetype string, return the nodetype's source.
   if (is_string($node_info) && !is_numeric($node_info)) {
     $type = $node_info;
-    return comment_sources_get_type_setting($type);
+    return comment_sources_get_source_type($type);
   }
   // Otherwise, attempt to load the node if this looks like a node ID.
   if (is_numeric($node_info)) {
@@ -171,7 +171,7 @@ function comment_sources_get_source($node_info) {
     $node = $node_info;
     // Returns the default source for this node type if the node is new.
     if (!isset($node->nid) || isset($node->is_new)) {
-      return comment_sources_get_type_setting($node->type);
+      return comment_sources_get_source_type($node->type);
     }
     // Otherwise, finds the existing stored comment source for this node.
     return comment_sources_get_source_node($node);
@@ -243,24 +243,39 @@ function comment_sources_has_comments($node, $source) {
  * Saves a node type's current comment source.
  *
  * @param array $type_settings
- *   The new comment sources values, keyed by node type.
+ *   The new comment sources values, keyed by node type, with some extraneous
+ *   form information.
  */
 function comment_sources_save_type_settings($type_settings) {
-  // Flips the $nodetypes_sources array to be keyed by comment source.
+  // Flips the $nodetypes_sources array to be keyed by comment source,
+  // while also only using valid nodetypes as keys for the new array.
   $sources_nodetypes = array();
+  $enabled_sources = comment_sources_enabled_sources();
+  $nodetypes = array_keys(_node_types_build()->types);
+  // For each array key-value pair like "type" -> "source:preset"
   foreach ($type_settings as $nodetype => $source) {
-    $sources_nodetypes[$source][$nodetype] = $nodetype;
+    // Only flips valid sources & nodetypes pairs.
+    if ($source && in_array($nodetype, $nodetypes)) {
+      // Strips the preset off the end of the source ID string.
+      $source = preg_replace('/:.*$/', '', $source);
+      // Adds to the flipped array.
+      $sources_nodetypes[$source][$nodetype] = $nodetype;
+    }
   }
 
   // Gets array containing all sources settings.
+  // Contains save_function callback from each source info.
   $sources = _comment_sources_sources();
 
   // For each enabled source...
-  $enabled_sources = comment_sources_enabled_sources();
   foreach (array_keys($enabled_sources) as $source) {
+    // Checks for any preset at the end of the string, like "source:preset".
     preg_match('/:(.*$)/', $source, $matches);
-    $source = preg_replace('/:.*$/', '', $source);
-
+    // If there is a match, $matches[1] will be the "preset" from example above.
+    if ($matches[1]) {
+      $source = preg_replace('/:.*$/', '', $source);
+      $preset = $matches[1];
+    }
     // Prepares the nodetype save callback function.
     if (isset($sources[$source]['save_function'])) {
       $save_nodetype_callback = $sources[$source]['save_function'];
@@ -268,15 +283,14 @@ function comment_sources_save_type_settings($type_settings) {
     else {
       $save_nodetype_callback = "_comment_sources_save_" . $source;
     }
-
     // Invokes the nodetype save callback for this source, if it exists.
     if (function_exists($save_nodetype_callback)) {
       $enabled_nodetypes = isset($sources_nodetypes[$source]) ? $sources_nodetypes[$source] : array();
-      $params = array($enabled_nodetypes);
+      $params = array();
+      $params[] = $enabled_nodetypes;
       // Handles comment sources like "$module:$preset".
-      if (count($matches) > 1) {
-        $preset = $matches[1];
-        $params[] = $preset;
+      if ($preset) {
+        $params[] = $matches[1];
       }
       call_user_func_array($save_nodetype_callback, $params);
     }
@@ -387,7 +401,7 @@ function comment_sources_recent_comments($source, $count = 10) {
  * @return bool
  *   TRUE if the node settings were successfully updated.
  */
-function comment_sources_record_node_settings($node, $source, $status, $new = FALSE) {
+function comment_sources_record_node_settings($node, $source, $status) {
   // Handles and validates $node param.
   if (is_object($node) && $node->nid) {
     $nid = $node->nid;
@@ -399,30 +413,22 @@ function comment_sources_record_node_settings($node, $source, $status, $new = FA
     return FALSE;
   }
 
-  if (in_array($source, array('comment', ''))) {
-    $success = _comment_sources_record_node_drupal($nid, $source, $status, $new);
-  }
-  else {
-    $success = _comment_sources_record_node_external($nid, $source, $status, $new);
-  }
+  $success = _comment_sources_record_node_settings($nid, $source, $status);
 
   // Returns TRUE if the drupal_write_record() succeeded.
   return ($success !== FALSE);
 }
 
 /**
- * Records the comment source and status for a drupal comment node.
+ * Records the comment source and status.
  */
-function _comment_sources_record_node_drupal($nid, $source, $status, $new) {
-
-}
-
-/**
- * Records the comment source and status for an external (3rd party) source.
- */
-function _comment_sources_record_node_external($nid, $source, $status, $new) {
+function _comment_sources_record_node_settings($nid, $source, $status) {
   // Finds any existing record of this node and this source.
-  $record = db_select('comment_sources_comments', 'c')->condition('c.nid', $nid)->condition('c.source', $source)->fields('c', array('nid'))->execute();
+  $record = db_select('comment_sources_comments', 'c')
+    ->condition('c.nid', $nid)
+    ->condition('c.source', $source)
+    ->fields('c', array('nid'))
+    ->execute();
 
   // Makes the data array to write to the database.
   $data = array(
@@ -433,6 +439,18 @@ function _comment_sources_record_node_external($nid, $source, $status, $new) {
 
   // Updates the existing record or adds a new record.
   if ($record->rowCount() > 0) {
+    // Ensures only one comment source can be "ON" at a time.
+    if ($status = COMMENT_SOURCES_ON) {
+      // If any other sources are active and have comments, alter those records.
+      $update = db_update('comment_sources_comment', 'c')
+        ->fields(array(
+          'status' => COMMENT_SOURCES_HAS_PREVIOUS,
+        ))
+        ->condition('status', COMMENT_SOURCES_ON)
+        ->condition('has_comments', 1)
+        ->execute();
+    }
+    // Sets the given source status to ON, now that no others are on.
     $success = drupal_write_record('comment_sources_comments', $data, array('nid', 'source'));
   }
   else {
@@ -444,7 +462,7 @@ function _comment_sources_record_node_external($nid, $source, $status, $new) {
 /**
  * Gets the comment source for this node type.
  */
-function comment_sources_get_type_setting($type) {
+function comment_sources_get_source_type($type) {
   $type_settings = comment_sources_type_settings();
   return isset($type_settings[$type]) ? $type_settings[$type] : '';
 }
@@ -460,7 +478,7 @@ function comment_sources_get_source_node($node) {
   }
 
   // Otherwise, defaults to this node type's setting if no result was found.
-  return comment_sources_get_type_setting($node->type);
+  return comment_sources_get_source_type($node->type);
 }
 
 /**

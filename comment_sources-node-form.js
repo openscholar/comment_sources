@@ -5,6 +5,7 @@
 
 Drupal.behaviors.commentFieldsetSummaries = {
   attach: function (context) {
+    // Provide the summary for the node form.
     $('fieldset.comment-node-settings-form', context).drupalSetSummary(function (context) {
       var vals = [];
       var comment_status = $('.form-item-comment input:checked', context).next('label').text();
