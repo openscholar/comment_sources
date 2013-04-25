@@ -63,8 +63,8 @@ to be easily provided in other modules.
 --------------------------------------------------------------------------------
 A: No comments             0               ''
 B: Drupal comments (ON)    2               'comment'
-C: Drupal comments (OFF)   0               'comment'
+C: Drupal comments (OFF)   0               ''
 D: Disqus comments (ON)    0               'disqus'
-E: Disqus comments (OFF)   0               'disqus'
+E: Disqus comments (OFF)   0               ''
 F: Facebook comments (ON)  0               'fb_social'
-G: Facebook comments (OFF) 0               'fb_social'
+G: Facebook comments (OFF) 0               ''

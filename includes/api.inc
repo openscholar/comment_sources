@@ -231,7 +231,11 @@ function comment_sources_has_comments($node, $source) {
   // Default value is FALSE if we don't find any information in the database.
   $has_comments[$source][$nid] = FALSE;
   // Gets the "has_comments" value from the database.
-  $record = db_select('comment_sources_comments', 'c')->condition('c.nid', $nid)->condition('c.source', $source)->fields('c', array('has_comments'))->execute();
+  $record = db_select('comment_sources_comments', 'c')
+    ->condition('c.nid', $nid)
+    ->condition('c.source', $source)
+    ->fields('c', array('has_comments'))
+    ->execute();
   if ($record->rowCount() == 1) {
     $has_comments[$source][$nid] = ($record->fetchField(0) == 1);
   }
@@ -440,13 +444,13 @@ function _comment_sources_record_node_settings($nid, $source, $status) {
   // Updates the existing record or adds a new record.
   if ($record->rowCount() > 0) {
     // Ensures only one comment source can be "ON" at a time.
-    if ($status = COMMENT_SOURCES_ON) {
+    if ($status = COMMENT_SOURCES_ACTIVE) {
       // If any other sources are active and have comments, alter those records.
       $update = db_update('comment_sources_comment', 'c')
         ->fields(array(
-          'status' => COMMENT_SOURCES_HAS_PREVIOUS,
+          'status' => COMMENT_SOURCES_INACTIVE_HAS_COMMENTS,
         ))
-        ->condition('status', COMMENT_SOURCES_ON)
+        ->condition('status', COMMENT_SOURCES_ACTIVE)
         ->condition('has_comments', 1)
         ->execute();
     }
