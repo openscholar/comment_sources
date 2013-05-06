@@ -466,23 +466,60 @@ function _comment_sources_record_node_settings($nid, $source, $status) {
 /**
  * Gets the comment source for this node type.
  */
-function comment_sources_get_source_type($type) {
+function comment_sources_get_source_type($type, $trim_plugin = FALSE, $default_source = '') {
+  // Handles node ID as input.
+  if (!is_string($type) && is_numeric($type)) {
+    $node = node_load($type);
+    $type = $node->type;
+  }
+
+  // Loads the (drupal_static) comment source settings for each content type.
   $type_settings = comment_sources_type_settings();
-  return isset($type_settings[$type]) ? $type_settings[$type] : '';
+
+  // Assigns the stored comment source for this type.
+  if (isset($type_settings[$type])) {
+    $source = $type_settings[$type];
+  }
+  // Otherwise, assigns the (optional param) default source.
+  else {
+    $source = $default_source;
+  }
+
+  // Optionally removes the plugin from the source key.
+  if ($trim_plugin) {
+    $source = preg_replace('/:.*$/', '', $source);
+  }
+
+  return $source;
 }
 
 /**
  * Gets the comment source for this node.
  */
-function comment_sources_get_source_node($node) {
+function comment_sources_get_source_node($node, $trim_plugin = FALSE) {
   // Returns the first-recorded comment source for this node.
-  $results = db_select('comment_sources_comments', 'c')->orderBy('cid', 'ASC')->condition('nid', $node->nid)->fields('c', array('source'))->execute()->fetchAllAssoc('cid');
-  foreach ($results as $cid => $record) {
-    return $record->source;
+  $results = db_select('comment_sources_comments', 'c')
+    ->orderBy('cid', 'ASC')
+    ->condition('nid', $node->nid)
+    ->fields('c', array('source'))
+    ->execute()
+    ->fetchAllAssoc('cid');
+  if ($results) {
+    foreach ($results as $cid => $record) {
+      $source = $record->source;
+    }
+  }
+  else {
+    // Otherwise, defaults to this node type's setting if no result was found.
+    $source = comment_sources_get_source_type($node->type, $trim_plugin);
   }
 
-  // Otherwise, defaults to this node type's setting if no result was found.
-  return comment_sources_get_source_type($node->type);
+  // Optionally removes the plugin from the source key.
+  if ($trim_plugin) {
+    $source = preg_replace('/:.*$/', '', $source);
+  }
+
+  return $source;
 }
 
 /**
@@ -495,15 +532,40 @@ function comment_sources_get_status($node) {
   elseif (is_numeric($node)) {
     $nid = $node;
   }
-  // Returns the first-recorded comment source for this node.
-  $results = db_select('comment_sources_comments', 'c')->orderBy('cid', 'ASC')->condition('nid', $nid)->fields('c', array('status'))->execute()->fetchAllAssoc('cid');
-  foreach ($results as $cid => $record) {
-    return $record->status;
+  // Returns INACTIVE if the node has been overridden to INACTIVE.
+  $results = db_select('comment_sources_comments', 'c')
+    ->orderBy('cid', 'ASC')
+    ->condition('nid', $nid)
+    ->fields('c', array('source', 'status'))
+    ->execute()
+    ->fetchAllAssoc('cid');
+  // Loops over all records for this node in the comment_sources_comments table.
+  if (sizeof($results)) {
+    foreach ($results as $key => $record) {
+      // If any of the records are set to active...
+      if ($record->status == COMMENT_SOURCES_ACTIVE) {
+        // Returns INACTIVE if the source is '' (No comments).
+        if ($record->source == '') {
+          return COMMENT_SOURCES_INACTIVE;
+        }
+        // Otherwise, this is an active, overridden source.
+        // Returns ACTIVE.
+        else {
+          return COMMENT_SOURCES_ACTIVE;
+        }
+      }
+    }
   }
 
-  // Default: Returns FALSE if no node record was found.
-  // The node may not exist, or the node exists but source = "No comments".
-  return FALSE;
+  // Gets the current comment source for this node type.
+  // Returns INACTIVE if no node record was found and current source is
+  // '' (No comments).
+  $source = comment_sources_get_source_type($nid);
+  if (!$source) {
+    return COMMENT_SOURCES_INACTIVE;
+  }
+  // Returns ACTIVE if no node record was found and a source is set.
+  return COMMENT_SOURCES_ACTIVE;
 }
 
 /**
