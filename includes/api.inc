@@ -448,7 +448,7 @@ function _comment_sources_record_node_settings($nid, $source, $status) {
       // If any other sources are active and have comments, alter those records.
       $update = db_update('comment_sources_comment', 'c')
         ->fields(array(
-          'status' => COMMENT_SOURCES_INACTIVE_HAS_COMMENTS,
+          'status' => COMMENT_SOURCES_INACTIVE,
         ))
         ->condition('status', COMMENT_SOURCES_ACTIVE)
         ->condition('has_comments', 1)

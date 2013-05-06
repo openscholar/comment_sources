@@ -2,3 +2,6 @@
 .buildpath
 .settings*
 *.swp
+*.idea*
+.idea*
+.idea/

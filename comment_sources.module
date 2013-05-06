@@ -328,7 +328,7 @@ function comment_sources_node_insert($node) {
   // If this nodetype is set to "No comments", no record necessary.
   $source = comment_sources_get_source_type($node->type);
   $source = preg_replace('/:.*$/', '', $source);
-  dpm($node, 'node to insert');
+  // dpm($node, 'node to insert');
   if (!$source) {
     return;
   }
@@ -411,16 +411,16 @@ function comment_sources_node_view($node, $view_mode) {
   // Adds javascript for recording comments made in a third-party system.
   $source = comment_sources_get_source_node($node, TRUE);
   $require_js = in_array($source, array('fb_social', 'disqus'));
-  dpm($source, 'sources');
+  // dpm($source, 'sources');
   switch ($view_mode) {
     case 'teaser':
-      dpm($node, 'view teaser!');
+      // dpm($node, 'view teaser!');
       if (!$source) {
         unset($node->content['links']['comment']['#links']['comment-add']);
       }
       break;
     case 'full':
-      dpm($node, 'view page!');
+      // dpm($node, 'view page!');
       if ($require_js) {
         // Makes this node ID available to comment_sources javascript.
         drupal_add_js(array('comment_sources' => array('nid' => $node->nid)), 'setting');
