@@ -501,7 +501,9 @@ function comment_sources_get_source_node($node, $trim_plugin = FALSE) {
   $results = db_select('comment_sources_comments', 'c')
     ->orderBy('cid', 'ASC')
     ->condition('nid', $node->nid)
+    ->condition('status', COMMENT_SOURCES_ACTIVE)
     ->fields('c', array('source'))
+    ->range(0, 1)
     ->execute()
     ->fetchAllAssoc('cid');
   if ($results) {
@@ -569,42 +571,19 @@ function comment_sources_get_status($node) {
 }
 
 /**
- * Returns if comments have been disabled for this node and source.
- *
- * Additionally, checks if there are no comments from another comment source.
- *
- * Assumes the source is the selected source for the content type.
- *
- * @todo verify logic
+ * Returns TRUE if the given node is set to the given comment source.
  */
 function comment_sources_should_display_comments($node, $source) {
-  $result = TRUE;
-  if ($node && $node->nid) {
-    $record = db_select('comment_sources_comments', 'c')
-      ->condition('c.nid', $node->nid)
-      ->fields('c', array('source', 'status', 'has_comments'))
-      ->execute();
-    foreach ($record as $row) {
-      if ($row->source == $source) {
-        // Always displays if there are comments for the selected source.
-        if ($row->has_comments) {
-          $result = TRUE;
-          break;
-        }
-        // Disables if comments not enabled for the node.
-        else {
-          if (!$row->status) {
-            $result = FALSE;
-          }
-        }
-      }
-      else {
-        // Disables if there are comments for another content type.
-        if ($row->has_comments) {
-          $result = FALSE;
-        }
-      }
-    }
+  // First, returns FALSE if source is '' (No comments).
+  if (!$source) {
+    return FALSE;
   }
-  return $result;
+
+  // Otherwise, checks if the given source is active for this node.
+  $node_source = comment_sources_get_source_node($node);
+  if ($source != $node_source) {
+    return FALSE;
+  }
+
+  return TRUE;
 }
