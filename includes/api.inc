@@ -618,3 +618,4 @@ function comment_sources_should_display_comments($node, $source) {
 
   return TRUE;
 }
+

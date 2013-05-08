@@ -189,3 +189,4 @@ function _comment_sources_recent_comments_disqus($count) {
 function _comment_sources_recent_comments_fb_social($content_type, $count) {
   return array();
 }
+

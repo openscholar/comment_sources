@@ -56,3 +56,4 @@ function comment_sources_save_admin_form($form, $form_state) {
 
   comment_sources_save_type_settings($type_settings);
 }
+

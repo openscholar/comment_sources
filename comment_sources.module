@@ -170,7 +170,7 @@ function comment_sources_form_node_form_alter(&$form, $form_state, $form_id) {
         _comment_sources_form_node_form_alter($form, $form_state, $type_source, 0);
       }
       // Otherwise, if the type's default source is "No comments"...
-      else if (!$type_source) {
+      elseif (!$type_source) {
         // Exposes on/off checkbox for this node's overridden active source ON.
         _comment_sources_form_node_form_alter($form, $form_state, $node_source, COMMENT_SOURCES_ACTIVE);
       }
@@ -225,7 +225,6 @@ function _comment_sources_form_node_form_alter(&$form, $form_state, $source, $st
     $form['comment_settings']['no_comment'] = array(
       '#type' => 'radios',
       '#title' => t('No comments'),
-      //'#options' => array(0 => t('No comments')),
       '#default_value' => 0,
       '#disabled' => TRUE,
     );
@@ -237,12 +236,7 @@ function _comment_sources_form_node_form_alter(&$form, $form_state, $source, $st
     case 'comment':
       unset($form['comment_settings']['disqus_status']);
       unset($form['comment_settings']['fb_social_status']);
-//      unset($form['comment_settings']['comment'][COMMENT_NODE_HIDDEN]);
-//      unset($form['comment_settings']['comment'][COMMENT_NODE_CLOSED]);
-//      unset($form['comment_settings']['comment'][COMMENT_NODE_OPEN]);
       $form['comment_settings']['comment']['#type'] = 'value';
-      // Hides the default comment radio form element.
-      //$form['comment_settings']['comment']['#type'] = 'value';
       // Provides a checkbox to match other comment sources.
       $form['comment_settings']['comment_status'] = array(
         '#type' => 'checkbox',
@@ -350,7 +344,7 @@ function _comment_sources_form_node_form_alter(&$form, $form_state, $source, $st
         'comment_sources' => array(
           'source' => $source,
           'type_source' => $type_source,
-        )
+        ),
       );
       $form['#attached']['js'][] = array(
         'data' => $data,
@@ -375,7 +369,7 @@ function _comment_sources_form_node_form_alter(&$form, $form_state, $source, $st
  */
 function comment_sources_node_presave($node) {
   // Checks the comment source for this node.
-  $source = isset ($node->comment_source) ? $node->comment_source : '';
+  $source = isset($node->comment_source) ? $node->comment_source : '';
   // Checks the (optional) new source if the user is switching sources.
   $new_source = isset($node->comment_source_switch_source) ? $node->comment_source_switch_source : FALSE;
 
@@ -441,9 +435,7 @@ function comment_sources_node_presave($node) {
  *
  * @see comment_sources_form_node_form_alter()
  */
-function _comment_sources_node_form_submit($form, $form_state) {
-
-}
+function _comment_sources_node_form_submit($form, $form_state) {}
 
 /**
  * Prepares the comment source and status for this node form.
@@ -522,14 +514,15 @@ function comment_sources_node_view($node, $view_mode) {
         switch ($source) {
           case 'disqus':
             // @fixme. executes, but doesn't seem to affect links order.
-//            $node->content['links']['comment']['#links']['comment-add']['#weight'] = $weight + 1;
-//            if (isset($node->content['links']['disqus']['#links']['disqus_comments_num'])) {
-//              $node->content['links']['disqus']['#links']['disqus_comments_num']['#weight'] = $weight;
-//            }
+            //            $node->content['links']['comment']['#links']['comment-add']['#weight'] = $weight + 1;
+            //            if (isset($node->content['links']['disqus']['#links']['disqus_comments_num'])) {
+            //              $node->content['links']['disqus']['#links']['disqus_comments_num']['#weight'] = $weight;
+            //            }
             break;
         }
       }
       break;
+
     case 'full':
       if ($require_js) {
         // Makes this node ID available to comment_sources javascript.
@@ -608,3 +601,4 @@ function _comment_sources_comment_form_submit($form, $form_state) {
   $source = 'comment';
   comment_sources_record_comment_ajax($nid, $source);
 }
+
