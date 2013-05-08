@@ -84,34 +84,65 @@ function comment_sources_enabled_sources() {
  */
 function comment_sources_supports_recent_comments($source) {
   $sources = _comment_sources_sources();
-  $result = isset($sources[$source]) ? (bool) $sources[$source]['supports_recent_comments'] : FALSE;
+  if (isset($sources[$source])) {
+    $result = (bool) $sources[$source]['supports_recent_comments'];
+  }
+  else {
+    $result = FALSE;
+  }
+
   return $result;
 }
 
 /**
- * Writes has_comments=TRUE to database when a 3rd party comment is added.
+ * Updates database when a 3rd party comment is added.
  *
- * Triggered by client-side javascript at comment creation.
+ * Sets has_comments to 1 and status to 1 for the given node ID and source.
+ *
+ * Triggered by client-side javascript on comment creation.
  */
-function comment_sources_record_comment_ajax() {
-  $query_data = array(
-    'nid' => filter_input(INPUT_GET, 'nid', FILTER_VALIDATE_INT),
-    'source' => $_GET['source'],
-  );
-  if (!empty($query_data['source']) && !empty($query_data['nid'])) {
-    $record = db_select('comment_sources_comments', 'c')->condition('c.nid', $query_data['nid'])->condition('c.source', $query_data['source'])->fields('c', array('nid'))->execute();
-    $data = array(
-      'nid' => $query_data['nid'],
-      'source' => $query_data['source'],
-      'has_comments' => TRUE,
-    );
-    if ($record->rowCount() > 0) {
-      drupal_write_record('comment_sources_comments', $data, array('nid', 'source'));
-    }
-    else {
-      drupal_write_record('comment_sources_comments', $data);
-    }
+function comment_sources_record_comment_ajax($nid = FALSE, $source = FALSE) {
+  if (!$nid && !$source) {
+    // Gets the query data for database operations.
+    $nid    = filter_input(INPUT_GET, 'nid', FILTER_VALIDATE_INT);
+    $source = $_GET['source'];
   }
+
+  // Does nothing if either the source or nid are invalid.
+  if (empty($source) || empty($nid)) {
+    return;
+  }
+
+  // Finds any existing record for this node and this comment source.
+  $record = db_select('comment_sources_comments', 'c')
+    ->condition('c.nid', $nid)
+    ->condition('c.source', $source)
+    ->fields('c', array('nid'))
+    ->execute();
+
+  // Updates or adds a record for this node and source.
+  // Sets has_comments to TRUE (1) and status to ACTIVE (1).
+  $data = array(
+    'nid' => $nid,
+    'source' => $source,
+    'status' => COMMENT_SOURCES_ACTIVE,
+    'has_comments' => TRUE,
+  );
+
+  // Creates or updates record.
+  if ($record->rowCount() > 0) {
+    drupal_write_record('comment_sources_comments', $data, array('nid', 'source'));
+  }
+  else {
+    drupal_write_record('comment_sources_comments', $data);
+  }
+
+  // Additionally, sets any other comment sources to INACTIVE.
+  $record = db_update('comment_sources_comments')
+    ->fields(array('status'=> COMMENT_SOURCES_INACTIVE))
+    ->condition('nid', $nid)
+    ->condition('source', $source, '!=')
+    ->execute();
 }
 
 /**
@@ -446,12 +477,12 @@ function _comment_sources_record_node_settings($nid, $source, $status) {
     // Ensures only one comment source can be "ON" at a time.
     if ($status = COMMENT_SOURCES_ACTIVE) {
       // If any other sources are active and have comments, alter those records.
-      $update = db_update('comment_sources_comment', 'c')
+      $update = db_update('comment_sources_comments')
         ->fields(array(
           'status' => COMMENT_SOURCES_INACTIVE,
         ))
-        ->condition('status', COMMENT_SOURCES_ACTIVE)
-        ->condition('has_comments', 1)
+        ->condition('nid', $nid)
+        ->condition('source', $source, '!=')
         ->execute();
     }
     // Sets the given source status to ON, now that no others are on.
@@ -580,7 +611,7 @@ function comment_sources_should_display_comments($node, $source) {
   }
 
   // Otherwise, checks if the given source is active for this node.
-  $node_source = comment_sources_get_source_node($node);
+  $node_source = comment_sources_get_source_node($node, TRUE);
   if ($source != $node_source) {
     return FALSE;
   }

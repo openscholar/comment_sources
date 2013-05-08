@@ -203,10 +203,19 @@ function comment_sources_form_node_form_alter(&$form, $form_state, $form_id) {
  * @see comment_sources_form_node_form_alter()
  */
 function _comment_sources_form_node_form_alter(&$form, $form_state, $source, $status, $type_source = FALSE) {
+  // Adds the source value to the node form for later access.
   $form['comment_settings']['comment_source'] = array(
     '#type' => 'value',
     '#value' => $source,
   );
+  // Optionally adds the switchable type source if different from current source.
+  if ($type_source) {
+    $form['comment_settings']['comment_source_switch_source'] = array(
+      '#type' => 'value',
+      '#value' => $type_source,
+    );
+  }
+
   // Makes changes to appearance and exits early if source is "No comments".
   if (!$source) {
     // Shows only a disabled radio option for "No comments".
@@ -243,21 +252,47 @@ function _comment_sources_form_node_form_alter(&$form, $form_state, $source, $st
       break;
 
     case 'disqus':
-      // Don't hide Drupal comment options if there are pre-existing comments.
-      // Note if the comments status is 'Hidden',
-      // comment_count will always be zero.
-      if (!isset($node->comment_count) || ($node->comment_count == 0)) {
-        unset($form['comment_settings']['comment']);
-      }
+      // Hides drupal and fb_social comment settings.
+      unset($form['comment_settings']['comment']);
       unset($form['comment_settings']['fb_social_status']);
+      // @todo make this a patch in disqus_form_alter()
+      // Instead, for now we simply take into account that
+      // Disqus doesn't know to add disqus unless the type is set to disqus,
+      // If $type_source is set, that means this node uses disqus, but the
+      // active type source is different.
+      if ($type_source) {
+        // Add the Disqus settings into the Comment settings fieldset if it exists.
+        if (!isset($form['comment_settings'])) {
+          $form['comment_settings'] = array(
+            '#type' => 'fieldset',
+            '#access' => user_access('toggle disqus comments'),
+            '#title' => t('Comment settings'),
+            '#collapsible' => TRUE,
+            '#collapsed' => TRUE,
+            '#group' => 'additional_settings',
+            '#weight' => 30,
+          );
+        }
+        else {
+          if (isset($form['comment_settings']['comment'])) {
+            $form['comment_settings']['comment']['#access'] = $form['comment_settings']['#access'];
+            $form['comment_settings']['#access'] = TRUE;
+          }
+        }
+        $form['comment_settings']['disqus_status'] = array(
+          '#type' => 'checkbox',
+          '#title' => t('Disqus comments'),
+          '#description' => t('Users can post comments using <a href="@disqus">Disqus</a>.', array('@disqus' => 'http://disqus.com')),
+          '#default_value' => isset($form['#node']->disqus['status']) ? $form['#node']->disqus['status'] : TRUE,
+          '#access' => user_access('toggle disqus comments'),
+        );
+      }
       $form['comment_settings']['#access'] = user_access('toggle disqus comments');
       break;
 
     case 'fb_social':
-      // See comment above re: disqus.
-      if (!isset($node->comment_count) || ($node->comment_count == 0)) {
-        unset($form['comment_settings']['comment']);
-      }
+      // Hides drupal and disqus comments
+      unset($form['comment_settings']['comment']);
       unset($form['comment_settings']['disqus_status']);
 
       // Add node-specific Facebook comment settings, since they the aren't done
@@ -287,6 +322,42 @@ function _comment_sources_form_node_form_alter(&$form, $form_state, $source, $st
       );
       break;
   }
+  // Adds option to use the active comment source instead of overridden past source.
+  if ($type_source) {
+    // Finds the human-readable name for this type of post, if available.
+    // Otherwise defaults to machine name.
+    $type = $form['#node']->type;
+    $types = _node_types_build();
+    if (isset($types->names[$type])) {
+      $type = $types->names[$type];
+    }
+
+    // Only continues to present switch option if the comment source is valid.
+    $sources = _comment_sources_sources();
+    if (isset($sources[$type_source])) {
+      $type_source_human = t('a newer comment setting');
+      if (isset($sources[$type_source]['description'])) {
+        $type_source_human = $sources[$type_source]['description'];
+      }
+      $form['comment_settings']['comment_sources_switch'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Switch to use @type_source (hides existing comments)', array('@type_source' => $type_source_human)),
+        '#description' => t('New @type posts are set to use <strong>@type_source</strong>.<br/>Hide existing comments to use the new comment settings?', array('@type' => $type, '@type_source' => $type_source_human)),
+      );
+      $switch_states_js = drupal_get_path('module', 'comment_sources') . '/comment_sources.switch_states.js';
+      $form['#attached']['js'][] = $switch_states_js;
+      $data = array(
+        'comment_sources' => array(
+          'source' => $source,
+          'type_source' => $type_source,
+        )
+      );
+      $form['#attached']['js'][] = array(
+        'data' => $data,
+        'type' => 'setting',
+      );
+    }
+  }
 
   // Overrides the standard comment javascript with our improved version that
   // also handles comment sources.
@@ -305,8 +376,12 @@ function _comment_sources_form_node_form_alter(&$form, $form_state, $source, $st
 function comment_sources_node_presave($node) {
   // Checks the comment source for this node.
   $source = isset ($node->comment_source) ? $node->comment_source : '';
-  // If this node's comment source is set to Drupal comments...
-  if ($source == 'comment') {
+  // Checks the (optional) new source if the user is switching sources.
+  $new_source = isset($node->comment_source_switch_source) ? $node->comment_source_switch_source : FALSE;
+
+  // If this node's comment source is set to Drupal comments,
+  // then set the expected comment values (hidden on node form).
+  if ($source == 'comment' && !$new_source) {
     // If the Drupal comment setting was NOT overridden to INACTIVE,
     // then tell the drupal comment module that comments are "Open" for this
     // node.
@@ -319,16 +394,25 @@ function comment_sources_node_presave($node) {
       $node->comment = COMMENT_NODE_HIDDEN;
     }
   }
-}
 
-/**
- * Implements hook_node_insert().
- */
-function comment_sources_node_insert($node) {
-  // If this nodetype is set to "No comments", no record necessary.
-  $source = comment_sources_get_source_type($node->type);
-  $source = preg_replace('/:.*$/', '', $source);
-  // dpm($node, 'node to insert');
+  // If there is a new source and it is not "No comments"...
+  if ($new_source) {
+    // Sets the new source and disables the older source(s).
+    $status = COMMENT_SOURCES_ACTIVE;
+    comment_sources_record_node_settings($node, $new_source, $status);
+    // Turns on or off drupal comments depending on new source.
+    if ($new_source == 'comment') {
+      $node->comment = COMMENT_NODE_OPEN;
+    }
+    else {
+      $node->comment = COMMENT_NODE_HIDDEN;
+    }
+    // No further updates needed.
+    return;
+  }
+
+  // Only proceeds to potentially override this comment to "off"
+  // if the comment source is set.
   if (!$source) {
     return;
   }
@@ -350,6 +434,15 @@ function comment_sources_node_insert($node) {
   $source = '';
   $status = COMMENT_SOURCES_ACTIVE;
   comment_sources_record_node_settings($node, $source, $status);
+}
+
+/**
+ * Form submit callback;
+ *
+ * @see comment_sources_form_node_form_alter()
+ */
+function _comment_sources_node_form_submit($form, $form_state) {
+
 }
 
 /**
@@ -409,30 +502,46 @@ function _comment_sources_node_type_form_submit(&$form, $form_state) {
  */
 function comment_sources_node_view($node, $view_mode) {
   // Adds javascript for recording comments made in a third-party system.
-  $source = comment_sources_get_source_node($node, TRUE);
+  if (isset($node->source)) {
+    $source = $node->source;
+  }
+  else {
+    $source = comment_sources_get_source_node($node, TRUE);
+  }
+  // Does this source require javascript to be added?
   $require_js = in_array($source, array('fb_social', 'disqus'));
-  // dpm($source, 'sources');
+
   switch ($view_mode) {
     case 'teaser':
-      // dpm($node, 'view teaser!');
       if (!$source) {
         unset($node->content['links']['comment']['#links']['comment-add']);
       }
+      else {
+        // Standardizes the position of the comment add link as last link item.
+        $weight = 0;
+        switch ($source) {
+          case 'disqus':
+            // @fixme. executes, but doesn't seem to affect links order.
+//            $node->content['links']['comment']['#links']['comment-add']['#weight'] = $weight + 1;
+//            if (isset($node->content['links']['disqus']['#links']['disqus_comments_num'])) {
+//              $node->content['links']['disqus']['#links']['disqus_comments_num']['#weight'] = $weight;
+//            }
+            break;
+        }
+      }
       break;
     case 'full':
-      // dpm($node, 'view page!');
       if ($require_js) {
         // Makes this node ID available to comment_sources javascript.
         drupal_add_js(array('comment_sources' => array('nid' => $node->nid)), 'setting');
         drupal_add_js(drupal_get_path('module', 'comment_sources') . '/comment_sources.js');
-      }
-      else {
-        // @todo prevent js from adding disqus or fb_social comments
+        if (isset($node->content['comments']['comment_form'])) {
+          unset($node->content['comments']['comment_form']);
+        }
       }
       break;
   }
 }
-
 
 /**
  * Implements hook_node_load().
@@ -476,4 +585,26 @@ function comment_sources_views_api() {
   return array(
     'api' => 3.0,
   );
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter for comment_form.
+ */
+function comment_sources_form_comment_form_alter(&$form, &$form_state, $form_id) {
+  $form['#submit'][] = '_comment_sources_comment_form_submit';
+}
+
+/**
+ * Form submit callback for comment_form.
+ */
+function _comment_sources_comment_form_submit($form, $form_state) {
+  // Ensures we have a node ID to record.
+  if (!isset($form['#node']->nid) || !$form['#node']->nid) {
+    return;
+  }
+
+  // Records that this node has comments from the drupal (comment) source.
+  $nid = $form['#node']->nid;
+  $source = 'comment';
+  comment_sources_record_comment_ajax($nid, $source);
 }
