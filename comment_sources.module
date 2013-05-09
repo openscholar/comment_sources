@@ -555,10 +555,10 @@ function comment_sources_node_load($nodes, $types) {
  * Implements hook_fb_social_event_subscribe().
  */
 function comment_sources_fb_social_event_subscribe() {
-  // Integrates with google analytics.
+  // Triggers comment tracking js when a visitor creates a facebook comment.
   return array(
     'FB.Event.subscribe("comment.create", function(response) {',
-    'fb_social_track_comments(response);',
+    'Drupal.behaviors.comment_sources_fb_social_track_comments(response);',
     '});',
   );
 }

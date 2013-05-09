@@ -6,8 +6,8 @@ index 74d971d..deab80d 100644
            if (settings.disqus.sso || false) {
              this.sso = settings.disqus.sso;
            }
-+          if (typeof disqus_track_comments == 'function') {
-+              this.callbacks.onNewComment = [function(params) { disqus_track_comments(params); }];
++          if (typeof Drupal.behaviors.comment_sources_disqus_track_comments == 'function') {
++              this.callbacks.onNewComment = [function(params) { Drupal.behaviors.comment_sources_disqus_track_comments(params); }];
 +          }
          };
  
