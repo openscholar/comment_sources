@@ -57,14 +57,38 @@ to be easily provided in other modules.
 
 ## Schema
 
-### 7 Possible States -- how they are stored:
+One table: 'comment_sources_comments'
 
-   State                   node.comment   comment_sources_comments.source = 1
---------------------------------------------------------------------------------
-A: No comments             0               ''
-B: Drupal comments (ON)    2               'comment'
-C: Drupal comments (OFF)   0               ''
-D: Disqus comments (ON)    0               'disqus'
-E: Disqus comments (OFF)   0               ''
-F: Facebook comments (ON)  0               'fb_social'
-G: Facebook comments (OFF) 0               ''
+One record in the comment_sources_comments table represents an *overridden*
+node-source relationship. In many cases, nodes with comments enabled will not
+have records in the comment_sources_comments table.
+
+A single node may have more than one record, one: for each comment source. There
+will only ever be at most 1 active comment source for an individual node.
+
+### Examples
+
+- Let's say comments are set to "No comments" for blog posts. When new blog posts
+are added, users have no option to turn on comments for individual nodes, and no records are added to the database for new nodes.
+
+- Let's say comments are set to any source, i.e. Drupal comments. When new blog
+posts are added, Drupal comments will be enabled by default. If the user keeps
+this default setting, no records are added for the new nodes. But, if a user
+un-checks the "Drupal comments" checkbox, then a record will be added to the
+database, setting the active source for the overridden node to "No comments".
+
+- When a comment is added to a node, a record is added for that node, setting
+it's overridden active source to the current source, and marking "has_comments"
+as "1".
+
+- Let's say that comments of one source have been enabled for a while, and then
+the comment source is changed to something else, or turned off. Just as expected,
+new nodes will take the new source by default. But any nodes that have been
+previously overridden by (1) turning comments off on an individual node, or (2)
+a node receiving comments, will keep their previous overridden setting, without any change to the database.
+
+- For overridden nodes, users will always have the option to switch to another
+comment source if the current active source for that type is different from the 
+overridden value. In these cases, the previous source's record for this node 
+is set to "0" (inactive), and a record is added/updated for the current source
+and this node set to "1" (active).
