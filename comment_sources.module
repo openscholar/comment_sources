@@ -513,7 +513,10 @@ function comment_sources_node_view($node, $view_mode) {
         $weight = 0;
         switch ($source) {
           case 'disqus':
-            // @fixme. executes, but doesn't seem to affect links order.
+            // @fixme disqus link appears in a different order on teasers
+            // from all the other sources.
+            // this uncommented code executes, but doesn't seem to affect links order.
+            // maybe hook_implements_alter() ?
             //            $node->content['links']['comment']['#links']['comment-add']['#weight'] = $weight + 1;
             //            if (isset($node->content['links']['disqus']['#links']['disqus_comments_num'])) {
             //              $node->content['links']['disqus']['#links']['disqus_comments_num']['#weight'] = $weight;
@@ -533,21 +536,6 @@ function comment_sources_node_view($node, $view_mode) {
         }
       }
       break;
-  }
-}
-
-/**
- * Implements hook_node_load().
- *
- * For Disqus nodes, checks to see if the comments should be displayed.
- *
- * @todo add @see (where is this used?)
- */
-function comment_sources_node_load($nodes, $types) {
-  foreach ($nodes as & $node) {
-    if (isset($node->disqus)) {
-      $node->disqus['status'] = comment_sources_should_display_comments($node, 'disqus');
-    }
   }
 }
 
