@@ -1,7 +1,7 @@
 name = "Comment Sources"
 description = "Select among different commenting options"
+dependencies[] = comment
+dependencies[] = ctools
 core = 7.x
-
-files[] = comment_sources.test
 
 configure = admin/config/services/comment_sources
