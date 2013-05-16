@@ -148,7 +148,7 @@ function comment_sources_record_comment_ajax($nid = FALSE, $source = FALSE) {
 /**
  * Sets the comment source for this content type, with appropriate options.
  */
-function comment_sources_set_type_source($source, $type, $vsite = FALSE) {
+function comment_sources_set_type_source($source, $type) {
   // Returns FALSE if the specified node type is invalid.
   if (!array_key_exists($type, node_type_get_types())) {
     return FALSE;
@@ -183,15 +183,25 @@ function comment_sources_set_type_source($source, $type, $vsite = FALSE) {
  *
  * @param mixed $node_info
  *   Accepts a node object, node type string or nid.
+ * @param bool $trim_preset
+ *   TRUE if the returned comment source should trim the "plugin" portion from
+ *   the end of the string. i.e.
+ *   FALSE => 'fb_social:someplugin'
+ *   TRUE => 'fb_social'
+ * @param string $default_source
+ *   Which source should be returned if none found.
+ *
+ * @return string
+ *   The plugin string, with or without the plugin suffix.
  *
  * @return mixed
  *   One of the available source strings, or FALSE if passed invalid param.
  */
-function comment_sources_get_source($node_info) {
+function comment_sources_get_source($node_info, $trim_preset = FALSE, $default_source = '') {
   // If this looks like a nodetype string, return the nodetype's source.
   if (is_string($node_info) && !is_numeric($node_info)) {
     $type = $node_info;
-    return comment_sources_get_source_type($type);
+    return comment_sources_get_source_type($type, $trim_preset, $default_source);
   }
   // Otherwise, attempt to load the node if this looks like a node ID.
   if (is_numeric($node_info)) {
@@ -202,10 +212,10 @@ function comment_sources_get_source($node_info) {
     $node = $node_info;
     // Returns the default source for this node type if the node is new.
     if (!isset($node->nid) || isset($node->is_new)) {
-      return comment_sources_get_source_type($node->type);
+      return comment_sources_get_source_type($node->type, $trim_preset, $default_source);
     }
     // Otherwise, finds the existing stored comment source for this node.
-    return comment_sources_get_source_node($node);
+    return comment_sources_get_source_node($node, $trim_preset, $default_source);
   }
   // Returns FALSE if the $node_info param was invalid.
   return FALSE;
@@ -449,7 +459,9 @@ function comment_sources_record_node_settings($node, $source, $status) {
   }
 
   $success = _comment_sources_record_node_settings($nid, $source, $status);
-
+  if ($success) {
+    drupal_static_reset('comment_sources_node_sources');
+  }
   // Returns TRUE if the drupal_write_record() succeeded.
   return ($success !== FALSE);
 }
@@ -496,8 +508,21 @@ function _comment_sources_record_node_settings($nid, $source, $status) {
 
 /**
  * Gets the comment source for this node type.
+ *
+ * @param string $type
+ *   The machine name for this node type
+ * @param bool $trim_preset
+ *   TRUE if the returned comment source should trim the "plugin" portion from
+ *   the end of the string. i.e.
+ *   FALSE => 'fb_social:someplugin'
+ *   TRUE => 'fb_social'
+ * @param string $default_source
+ *   Which source should be returned if none found.
+ *
+ * @return string
+ *   The plugin string, with or without the plugin suffix.
  */
-function comment_sources_get_source_type($type, $trim_plugin = FALSE, $default_source = '') {
+function comment_sources_get_source_type($type, $trim_preset = FALSE, $default_source = '') {
   // Handles node ID as input.
   if (!is_string($type) && is_numeric($type)) {
     $node = node_load($type);
@@ -517,7 +542,7 @@ function comment_sources_get_source_type($type, $trim_plugin = FALSE, $default_s
   }
 
   // Optionally removes the plugin from the source key.
-  if ($trim_plugin) {
+  if ($trim_preset) {
     $source = preg_replace('/:.*$/', '', $source);
   }
 
@@ -526,29 +551,52 @@ function comment_sources_get_source_type($type, $trim_plugin = FALSE, $default_s
 
 /**
  * Gets the comment source for this node.
+ *
+ * @param object $node
+ *   The loaded node object to check for comment source.
+ * @param bool $trim_preset
+ *   TRUE if the returned comment source should trim the "plugin" portion from
+ *   the end of the string. i.e.
+ *   FALSE => 'fb_social:someplugin'
+ *   TRUE => 'fb_social'
+ * @param string $default_source
+ *   Which source should be returned if none found.
+ *
+ * @return string
+ *   The plugin string, with or without the plugin suffix.
  */
-function comment_sources_get_source_node($node, $trim_plugin = FALSE) {
-  // Returns the first-recorded comment source for this node.
-  $results = db_select('comment_sources_comments', 'c')
-    ->orderBy('cid', 'ASC')
-    ->condition('nid', $node->nid)
-    ->condition('status', COMMENT_SOURCES_ACTIVE)
-    ->fields('c', array('source'))
-    ->range(0, 1)
-    ->execute()
-    ->fetchAllAssoc('cid');
-  if ($results) {
-    foreach ($results as $cid => $record) {
-      $source = $record->source;
+function comment_sources_get_source_node($node, $trim_preset = FALSE, $default_source = '') {
+  // Stores info in a drupal_static variable.
+  $node_sources = &drupal_static('comment_sources_node_sources');
+
+  // Initializes this node's info array if it does not exist.
+  if (!isset($node_sources[$node->nid])) {
+    // Finds the first-recorded ACTIVE comment source for this node.
+    $results = db_select('comment_sources_comments', 'c')
+      ->orderBy('cid', 'ASC')
+      ->condition('nid', $node->nid)
+      ->condition('status', COMMENT_SOURCES_ACTIVE)
+      ->fields('c', array('source'))
+      ->range(0, 1)
+      ->execute()
+      ->fetchAllAssoc('cid');
+    if ($results) {
+      foreach ($results as $cid => $record) {
+        $source = $record->source;
+      }
     }
-  }
-  else {
     // Otherwise, defaults to this node type's setting if no result was found.
-    $source = comment_sources_get_source_type($node->type, $trim_plugin);
+    else {
+      $source = comment_sources_get_source_type($node->type, $trim_preset, $default_source);
+    }
+
+    // Stores this value in drupal static array.
+    $node_sources[$node->nid] = $source;
   }
 
+  $source = $node_sources[$node->nid];
   // Optionally removes the plugin from the source key.
-  if ($trim_plugin) {
+  if ($trim_preset) {
     $source = preg_replace('/:.*$/', '', $source);
   }
 

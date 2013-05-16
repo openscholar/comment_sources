@@ -119,14 +119,9 @@ function comment_sources_form_node_type_form_alter(&$form, $form_state, $form_id
     '#weight' => -20,
   );
 
-  // @todo Test the case where this is an array.
-  // Need to find another module that hooks into the submit form.
-  if (isset($form['actions']['submit']['#submit']) && is_array($form['actions']['submit']['#submit'])) {
-    $form['actions']['submit']['#submit'][] = '_comment_sources_node_type_form_submit';
-  }
-  else {
-    $form['actions']['submit']['#submit'] = array('_comment_sources_node_type_form_submit', 'node_type_form_submit');
-  }
+  // Adds callback to store the change of settings.
+  $form['actions']['submit']['#submit'][] = '_comment_sources_node_type_form_submit';
+
 }
 
 /**
@@ -139,27 +134,20 @@ function comment_sources_form_node_form_alter(&$form, $form_state, $form_id) {
   // Gets the source for this node.
   // For new nodes, this returns the current comment source for this type.
   // Otherwise, this returns the stored comment source for this node.
-  $type_source = comment_sources_get_source_type($node->type);
-  // Removes the preset name from fb_social sources.
-  $type_source = preg_replace('/:.*$/', '', $type_source);
+  $trim_preset = TRUE;
+  $type_source = comment_sources_get_source_type($node->type, $trim_preset);
 
   // Sets the default status to TRUE (1) if this is a new node.
   $is_new = !isset($node->nid) || isset($node->is_new);
 
+  // For new nodes, simply uses default for this node type.
   if ($is_new) {
-    // Just use default for this node type.
-    if (!$type_source) {
-      // Exposes "No comments" with no options to change.
-      _comment_sources_form_node_form_alter($form, $form_state, $type_source, COMMENT_SOURCES_ACTIVE);
-    }
-    else {
-      // Exposes on/off checkbox for this node type's active source.
-      _comment_sources_form_node_form_alter($form, $form_state, $type_source, COMMENT_SOURCES_ACTIVE);
-    }
+    // Exposes "No comments" with no options to change if source is "No comments".
+    // Otherwise exposes on/off checkbox for this node type's active source.
+    _comment_sources_form_node_form_alter($form, $form_state, $type_source, COMMENT_SOURCES_ACTIVE);
   }
+  // Otherwise, there are many possible states to display.
   else {
-    // Adds callback to process any updates to this node's comment source.
-    $form['#submit'][] = '_comment_sources_node_form_submit';
     // Compares the node type comment source to any overridden per-node source.
     $node_source = comment_sources_get_source_node($node);
     // If this node's source is different...
@@ -167,7 +155,7 @@ function comment_sources_form_node_form_alter(&$form, $form_state, $form_id) {
       // If the node's overridden setting is "No comments"...
       if (!$node_source) {
         // Exposes on/off checkbox for this type's active source default to OFF.
-        _comment_sources_form_node_form_alter($form, $form_state, $type_source, 0);
+        _comment_sources_form_node_form_alter($form, $form_state, $type_source, COMMENT_SOURCES_INACTIVE);
       }
       // Otherwise, if the type's default source is "No comments"...
       elseif (!$type_source) {
@@ -431,13 +419,6 @@ function comment_sources_node_presave($node) {
 }
 
 /**
- * Form submit callback;
- *
- * @see comment_sources_form_node_form_alter()
- */
-function _comment_sources_node_form_submit($form, $form_state) {}
-
-/**
  * Prepares the comment source and status for this node form.
  *
  * @todo find correct element paths.
@@ -480,13 +461,7 @@ function _comment_sources_node_type_form_submit(&$form, $form_state) {
   // Prepares params for nodetype source setting.
   $type = $form['#node_type']->type;
   $source = $form['comment']['comment_source']['#value'];
-  if (module_exists('vsite')) {
-    $vsite = vsite_get_vsite();
-  }
-  else {
-    $vsite = FALSE;
-  }
-  comment_sources_set_type_source($source, $type, $vsite);
+  comment_sources_set_type_source($source, $type);
 }
 
 /**
