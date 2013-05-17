@@ -31,7 +31,7 @@ index 93fb84a..2e1cde5 100644
  function disqus_node_view($node, $view_mode) {
 -  if (isset($node->disqus) && user_access('view disqus comments') && $node->disqus['status'] == 1) {
 +  if (isset($node->disqus) && user_access('view disqus comments') && ($node->disqus['status'] == 1
-+      || (module_exists('comment_sources') && comment_sources_should_display_comments($node, 'disqus'))) {
++      || (module_exists('comment_sources') && comment_sources_should_display_comments($node, 'disqus')))) {
      switch ($view_mode) {
        case 'full':
        	// Inject Disqus into the node object.
