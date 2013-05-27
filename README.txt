@@ -8,6 +8,7 @@ comments on nodes and node types.
  - Jeffrey Licht https://github.com/jlicht
  - Ferdi Alimadhi https://github.com/Ferdi
  - Richard Brandon http://github.com/rbran100
+ - Oren Robinson http://github.com/baisong
  - OpenScholar http://openscholar.harvard.edu
 
 Comment Sources module currently integrates node comment settings with 2
