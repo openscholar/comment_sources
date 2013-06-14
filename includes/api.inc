@@ -317,7 +317,7 @@ function comment_sources_save_type_settings($type_settings) {
     // Checks for any preset at the end of the string, like "source:preset".
     preg_match('/:(.*$)/', $source, $matches);
     // If there is a match, $matches[1] will be the "preset" from example above.
-    if ($matches[1]) {
+    if (isset($matches[1]) && $matches[1]) {
       $source = preg_replace('/:.*$/', '', $source);
       $preset = $matches[1];
     }
@@ -334,7 +334,7 @@ function comment_sources_save_type_settings($type_settings) {
       $params = array();
       $params[] = $enabled_nodetypes;
       // Handles comment sources like "$module:$preset".
-      if ($preset) {
+      if (isset($preset) && $preset) {
         $params[] = $matches[1];
       }
       call_user_func_array($save_nodetype_callback, $params);

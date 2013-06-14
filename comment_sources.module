@@ -389,6 +389,9 @@ function comment_sources_node_presave($node) {
     else {
       $node->comment = COMMENT_NODE_HIDDEN;
     }
+    // Records the new source and de-activates the old source.
+    $status = COMMENT_SOURCES_ACTIVE;
+    comment_sources_record_node_settings($node, $new_source, $status);
     // No further updates needed.
     return;
   }
