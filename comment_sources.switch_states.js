@@ -13,7 +13,7 @@
                 return;
             }
 
-            var original = ':input[name="'+ source + '_status"]';
+            var original = ':input[name="' + source + '_status"]';
             var switched = ':input[name="comment_sources_switch"]';
 
             if (!original.length || !switched.length) {

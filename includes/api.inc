@@ -139,7 +139,7 @@ function comment_sources_record_comment_ajax($nid = FALSE, $source = FALSE) {
 
   // Additionally, sets any other comment sources to INACTIVE.
   $record = db_update('comment_sources_comments')
-    ->fields(array('status'=> COMMENT_SOURCES_INACTIVE))
+    ->fields(array('status' => COMMENT_SOURCES_INACTIVE))
     ->condition('nid', $nid)
     ->condition('source', $source, '!=')
     ->execute();
@@ -440,8 +440,6 @@ function comment_sources_recent_comments($source, $count = 10) {
  *   A machine name of an available comment source.
  * @param int $status
  *   Whether comments are enabled or disabled.
- * @param bool $new
- *   Whether this node is new (just being created).
  *
  * @return bool
  *   TRUE if the node settings were successfully updated.
@@ -621,7 +619,7 @@ function comment_sources_get_status($node) {
     ->execute()
     ->fetchAllAssoc('cid');
   // Loops over all records for this node in the comment_sources_comments table.
-  if (sizeof($results)) {
+  if (count($results)) {
     foreach ($results as $key => $record) {
       // If any of the records are set to active...
       if ($record->status == COMMENT_SOURCES_ACTIVE) {
@@ -666,4 +664,3 @@ function comment_sources_should_display_comments($node, $source) {
 
   return TRUE;
 }
-

@@ -69,8 +69,9 @@ will only ever be at most 1 active comment source for an individual node.
 
 ### Examples
 
-- Let's say comments are set to "No comments" for blog posts. When new blog posts
-are added, users have no option to turn on comments for individual nodes, and no records are added to the database for new nodes.
+- Let's say comments are set to "No comments" for blog posts. When new blog
+posts are added, users have no option to turn on comments for individual nodes,
+and no records are added to the database for new nodes.
 
 - Let's say comments are set to any source, i.e. Drupal comments. When new blog
 posts are added, Drupal comments will be enabled by default. If the user keeps
@@ -83,10 +84,11 @@ it's overridden active source to the current source, and marking "has_comments"
 as "1".
 
 - Let's say that comments of one source have been enabled for a while, and then
-the comment source is changed to something else, or turned off. Just as expected,
-new nodes will take the new source by default. But any nodes that have been
-previously overridden by (1) turning comments off on an individual node, or (2)
-a node receiving comments, will keep their previous overridden setting, without any change to the database.
+the comment source is changed to something else, or turned off. Just as
+expected, new nodes will take the new source by default. But any nodes that have
+been previously overridden by (1) turning comments off on an individual node, or
+(2) a node receiving comments, will keep their previous overridden setting,
+without any change to the database.
 
 - For overridden nodes, users will always have the option to switch to another
 comment source if the current active source for that type is different from the 

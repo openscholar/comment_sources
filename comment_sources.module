@@ -142,7 +142,7 @@ function comment_sources_form_node_form_alter(&$form, $form_state, $form_id) {
 
   // For new nodes, simply uses default for this node type.
   if ($is_new) {
-    // Exposes "No comments" with no options to change if source is "No comments".
+    // Exposes "No comments" with no options to edit if source is "No comments".
     // Otherwise exposes on/off checkbox for this node type's active source.
     _comment_sources_form_node_form_alter($form, $form_state, $type_source, COMMENT_SOURCES_ACTIVE);
   }
@@ -196,7 +196,7 @@ function _comment_sources_form_node_form_alter(&$form, $form_state, $source, $st
     '#type' => 'value',
     '#value' => $source,
   );
-  // Optionally adds the switchable type source if different from current source.
+  // Optionally adds switchable type source if different from current source.
   if ($type_source) {
     $form['comment_settings']['comment_source_switch_source'] = array(
       '#type' => 'value',
@@ -243,7 +243,7 @@ function _comment_sources_form_node_form_alter(&$form, $form_state, $source, $st
       // If $type_source is set, that means this node uses disqus, but the
       // active type source is different.
       if ($type_source) {
-        // Add the Disqus settings into the Comment settings fieldset if it exists.
+        // Add the Disqus settings into the Comment settings fieldset if exists.
         if (!isset($form['comment_settings'])) {
           $form['comment_settings'] = array(
             '#type' => 'fieldset',
@@ -273,7 +273,7 @@ function _comment_sources_form_node_form_alter(&$form, $form_state, $source, $st
       break;
 
     case 'fb_social':
-      // Hides drupal and disqus comments
+      // Hides drupal and disqus comments.
       unset($form['comment_settings']['comment']);
       unset($form['comment_settings']['disqus_status']);
 
@@ -304,7 +304,7 @@ function _comment_sources_form_node_form_alter(&$form, $form_state, $source, $st
       );
       break;
   }
-  // Adds option to use the active comment source instead of overridden past source.
+  // Adds option to use the active source instead of overridden past source.
   if ($type_source) {
     // Finds the human-readable name for this type of post, if available.
     // Otherwise defaults to machine name.
@@ -493,12 +493,12 @@ function comment_sources_node_view($node, $view_mode) {
           case 'disqus':
             // @fixme disqus link appears in a different order on teasers
             // from all the other sources.
-            // this uncommented code executes, but doesn't seem to affect links order.
+            // this code executes, but doesn't seem to affect links order.
             // maybe hook_implements_alter() ?
-            //            $node->content['links']['comment']['#links']['comment-add']['#weight'] = $weight + 1;
-            //            if (isset($node->content['links']['disqus']['#links']['disqus_comments_num'])) {
-            //              $node->content['links']['disqus']['#links']['disqus_comments_num']['#weight'] = $weight;
-            //            }
+            $node->content['links']['comment']['#links']['comment-add']['#weight'] = $weight + 1;
+            if (isset($node->content['links']['disqus']['#links']['disqus_comments_num'])) {
+              $node->content['links']['disqus']['#links']['disqus_comments_num']['#weight'] = $weight;
+            }
             break;
         }
       }
@@ -547,7 +547,7 @@ function comment_sources_views_api() {
 }
 
 /**
- * Implements hook_form_FORM_ID_alter for comment_form.
+ * Implements hook_form_FORM_ID_alter() for comment_form().
  */
 function comment_sources_form_comment_form_alter(&$form, &$form_state, $form_id) {
   $form['#submit'][] = '_comment_sources_comment_form_submit';
@@ -567,4 +567,3 @@ function _comment_sources_comment_form_submit($form, $form_state) {
   $source = 'comment';
   comment_sources_record_comment_ajax($nid, $source);
 }
-

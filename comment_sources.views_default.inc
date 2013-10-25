@@ -24,8 +24,6 @@ function comment_sources_views_default_views() {
   $view->disabled = FALSE;
 
   /* Display: Master */
-
-
   $handler = $view->new_display('default', 'Master', 'default');
   $handler->display->display_options['title'] = t('Review comments');
   $handler->display->display_options['use_more'] = TRUE;
@@ -40,8 +38,6 @@ function comment_sources_views_default_views() {
   $handler->display->display_options['style_plugin'] = 'list';
   $handler->display->display_options['row_plugin'] = 'fields';
   /* No results behavior: Global: Text area */
-
-
   $handler->display->display_options['empty']['area']['id'] = 'area';
   $handler->display->display_options['empty']['area']['table'] = 'views';
   $handler->display->display_options['empty']['area']['field'] = 'area';
@@ -50,37 +46,27 @@ function comment_sources_views_default_views() {
   $handler->display->display_options['empty']['area']['format'] = 'filtered_html';
   $handler->display->display_options['empty']['area']['tokenize'] = 0;
   /* Relationship: Comment: Content */
-
-
   $handler->display->display_options['relationships']['nid']['id'] = 'nid';
   $handler->display->display_options['relationships']['nid']['table'] = 'comment';
   $handler->display->display_options['relationships']['nid']['field'] = 'nid';
   /* Field: Comment: Title */
-
-
   $handler->display->display_options['fields']['subject']['id'] = 'subject';
   $handler->display->display_options['fields']['subject']['table'] = 'comment';
   $handler->display->display_options['fields']['subject']['field'] = 'subject';
   $handler->display->display_options['fields']['subject']['label'] = '';
   $handler->display->display_options['fields']['subject']['link_to_comment'] = 1;
   /* Field: Comment: Updated date */
-
-
   $handler->display->display_options['fields']['timestamp']['id'] = 'timestamp';
   $handler->display->display_options['fields']['timestamp']['table'] = 'comment';
   $handler->display->display_options['fields']['timestamp']['field'] = 'changed';
   $handler->display->display_options['fields']['timestamp']['label'] = '';
   $handler->display->display_options['fields']['timestamp']['date_format'] = 'time ago';
   /* Sort criterion: Comment: Updated date */
-
-
   $handler->display->display_options['sorts']['timestamp']['id'] = 'timestamp';
   $handler->display->display_options['sorts']['timestamp']['table'] = 'comment';
   $handler->display->display_options['sorts']['timestamp']['field'] = 'changed';
   $handler->display->display_options['sorts']['timestamp']['order'] = 'DESC';
   /* Filter criterion: Content: Type */
-
-
   $handler->display->display_options['filters']['type']['id'] = 'type';
   $handler->display->display_options['filters']['type']['table'] = 'node';
   $handler->display->display_options['filters']['type']['field'] = 'type';
@@ -92,16 +78,12 @@ function comment_sources_views_default_views() {
   $handler->display->display_options['filters']['type']['expose']['identifier'] = 'type';
   $handler->display->display_options['filters']['type']['expose']['reduce'] = 0;
   /* Filter criterion: Comment: Approved */
-
-
   $handler->display->display_options['filters']['status']['id'] = 'status';
   $handler->display->display_options['filters']['status']['table'] = 'comment';
   $handler->display->display_options['filters']['status']['field'] = 'status';
   $handler->display->display_options['filters']['status']['value'] = '0';
 
   /* Display: Page */
-
-
   $handler = $view->new_display('page', 'Page', 'page');
   $handler->display->display_options['defaults']['style_plugin'] = FALSE;
   $handler->display->display_options['style_plugin'] = 'table';
@@ -162,8 +144,6 @@ function comment_sources_views_default_views() {
   $handler->display->display_options['defaults']['row_options'] = FALSE;
   $handler->display->display_options['defaults']['fields'] = FALSE;
   /* Field: Comment: Title */
-
-
   $handler->display->display_options['fields']['subject']['id'] = 'subject';
   $handler->display->display_options['fields']['subject']['table'] = 'comment';
   $handler->display->display_options['fields']['subject']['field'] = 'subject';
@@ -189,8 +169,6 @@ function comment_sources_views_default_views() {
   $handler->display->display_options['fields']['subject']['link_to_comment'] = 1;
   $handler->display->display_options['fields']['subject']['link_to_node'] = 0;
   /* Field: Comment: Comment */
-
-
   $handler->display->display_options['fields']['comment']['id'] = 'comment';
   $handler->display->display_options['fields']['comment']['table'] = 'field_data_comment_body';
   $handler->display->display_options['fields']['comment']['field'] = 'comment_body';
@@ -216,8 +194,6 @@ function comment_sources_views_default_views() {
   $handler->display->display_options['fields']['comment']['hide_alter_empty'] = 1;
   $handler->display->display_options['fields']['comment']['field_api_classes'] = 0;
   /* Field: Content: Title */
-
-
   $handler->display->display_options['fields']['title']['id'] = 'title';
   $handler->display->display_options['fields']['title']['table'] = 'node';
   $handler->display->display_options['fields']['title']['field'] = 'title';
@@ -243,8 +219,6 @@ function comment_sources_views_default_views() {
   $handler->display->display_options['fields']['title']['hide_alter_empty'] = 1;
   $handler->display->display_options['fields']['title']['link_to_node'] = 1;
   /* Field: Comment: Updated date */
-
-
   $handler->display->display_options['fields']['timestamp']['id'] = 'timestamp';
   $handler->display->display_options['fields']['timestamp']['table'] = 'comment';
   $handler->display->display_options['fields']['timestamp']['field'] = 'changed';
@@ -269,8 +243,6 @@ function comment_sources_views_default_views() {
   $handler->display->display_options['fields']['timestamp']['hide_alter_empty'] = 1;
   $handler->display->display_options['fields']['timestamp']['date_format'] = 'time ago';
   /* Field: Comment: Approve link */
-
-
   $handler->display->display_options['fields']['approve_comment']['id'] = 'approve_comment';
   $handler->display->display_options['fields']['approve_comment']['table'] = 'comment';
   $handler->display->display_options['fields']['approve_comment']['field'] = 'approve_comment';
@@ -295,8 +267,6 @@ function comment_sources_views_default_views() {
   $handler->display->display_options['fields']['approve_comment']['hide_alter_empty'] = 1;
   $handler->display->display_options['fields']['approve_comment']['link_to_node'] = 0;
   /* Field: Comment: Delete link */
-
-
   $handler->display->display_options['fields']['delete_comment']['id'] = 'delete_comment';
   $handler->display->display_options['fields']['delete_comment']['table'] = 'comment';
   $handler->display->display_options['fields']['delete_comment']['field'] = 'delete_comment';
@@ -325,4 +295,3 @@ function comment_sources_views_default_views() {
   $export['review_comments'] = $view;
   return $export;
 }
-

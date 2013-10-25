@@ -61,4 +61,3 @@ function comment_sources_install() {
   $weight = (isset($result->weight)) ? $result->weight : 0;
   db_query("UPDATE {system} SET weight = :weight WHERE name = 'comment_sources'", array(':weight' => $weight + 1));
 }
-
